@@ -1,0 +1,11 @@
+# Calculation outputs
+fort.*
+
+# Fortran 
+*.o
+*.mod
+*.a
+
+# hormat compiled
+./hormat-so
+

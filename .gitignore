@@ -8,3 +8,6 @@ fort.*
 
 # hormat compiled
 ./hormat-so
+
+# test twofnr dir
+test_twofnr/

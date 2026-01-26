@@ -1,7 +1,7 @@
 c+mu-----------------------------------------------------------------------
       module potential_parameters
       Save
-      integer nr2
+      integer nr2,ploop
       real *8 v0,rr,ar,rcoul,vcoul,Wv,rrv,av,Ws,rrs,as,Vso,rrso,aso
       real*8 beta,cnl,drwf
       complex *16, dimension(:),allocatable :: uloc0,uloc1,d1uloc,d2uloc
@@ -116,6 +116,11 @@ c     need_wfs=.false.
       drwf=0.1
       nr1=a/drwf
       nr2=rmax/drwf
+
+      ! Writting top comment to TwoFNR wfn files
+      write(211,*) '# Channel distorted waves'
+      write(212,*) '# Channel distorted waves'
+      write(213,*) '# Channel distorted waves'
 
       ! Now starting the caclulations
 
@@ -496,27 +501,36 @@ c     if(ipot==2) write(104,*)  nmax,abs(rmatrix),l,j
       ! Find expansion coefficients C:
 
       vector_C=h2m*a*matmul(dmat,ho(0:nmax))*dchiext
-
+      ! Testing writting for twoFNR remove do loop later
+      do ploop=1,2
+      if(l==0) write(211+ipot,*) '# L=',l,' # J=',0.0d0
+      if(l.ge.1) write(211+ipot,*) '# L=',l,' # J=',0.5d0*j
+      write(211+ipot,960) 0.d0,0.d0,0.d0
         do i = 1,nr1
         r=i*drwf
         call phi_ho(Nm,l,r,b,ho_r)
         wf=dot_product(vector_C,ho_r(0:nmax))
         if(ipot==1) wf=wf*perey(i)
         write(111+ipot,*) r,q*r*real(wf),q*r*aimag(wf)
+        write(211+ipot,960) r,q*r*real(wf),q*r*aimag(wf)
 c       write(112+npot,*) r,q*r*abs(wf)
         enddo
+        write(211+ipot,960) 0.d0,0.d0,0.d0
         do i = nr1+1,nr2
         r=i*drwf
         wf=(fcr(i,l)+0.5d0*im1*(1-smatrix)*(gcr(i,l)+im1*fcr(i,l)))/r/q
         wf=wf*cph
         if(ipot==1) wf=wf*perey(i)
         write(111+ipot,*) r,q*r*real(wf),q*r*aimag(wf)
+        write(211+ipot,960) r,q*r*real(wf),q*r*aimag(wf)
 c       write(112+npot,*) r,q*r*abs(wf)
         enddo
         write(111+ipot,*) ' '
 c       write(112+npot,*) ' '
+        enddo !ploop test
 
       endif
+  960 format(f22.4,3d18.8)
 
       ! construct contribution ofL-th partial wave to xsec
 

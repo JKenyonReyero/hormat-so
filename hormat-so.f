@@ -46,7 +46,7 @@ c     open(unit=105,file='smatrix-nmax',status='old',position='append')
 
       ! Reading information about colliding nuclei
 
-      print *,' enter tartet mass, target charge, projectile mass, ',
+      print *,' enter target mass, target charge, projectile mass, ',
      &        ' projectile  charge'
       read *,at,zt,ap,zp
       fmu=at*ap/(at+ap)

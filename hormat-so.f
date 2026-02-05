@@ -1,7 +1,7 @@
 c+mu-----------------------------------------------------------------------
       module potential_parameters
       Save
-      integer nr2,ploop
+      integer nr2
       real *8 v0,rr,ar,rcoul,vcoul,Wv,rrv,av,Ws,rrs,as,Vso,rrso,aso
       real*8 beta,cnl,drwf
       complex *16, dimension(:),allocatable :: uloc0,uloc1,d1uloc,d2uloc
@@ -33,7 +33,7 @@ c     real *8,allocatable, dimension(:,:) :: vlsmat1
       complex*16,allocatable,dimension(:,:) :: vlint,dmat,vlsmat1
       complex*16 im1,smatrix,delta,S0,Sl,Slm,Slp,dchiext,wf,Vloc(0:2)
      ,          ,hm,hp,dhm,dhp,chi,chip,rmatrix,famp(180,0:2),fcoul
-     ,          ,gamp(180,0:2),Vls1
+     ,          ,gamp(180,0:2),Vls1,cph
       dimension eta_store(1),plegndr(180),plegndrm(180)
       logical need_wfs
       pi=3.141592653589793d0
@@ -495,6 +495,7 @@ c     if(ipot==2) write(104,*)  nmax,abs(rmatrix),l,j
       if(need_wfs) then
 
       cph=exp(im1*coulphas(l+1))
+      cph=1  ! comment out for coulomb phase
       dchiext=0.5d0*im1*(dhm-smatrix*dhp)
       dchiext=dchiext*cph   ! multiplying by Coulomb phase
 
@@ -502,7 +503,6 @@ c     if(ipot==2) write(104,*)  nmax,abs(rmatrix),l,j
 
       vector_C=h2m*a*matmul(dmat,ho(0:nmax))*dchiext
       ! Testing writting for twoFNR remove do loop later
-      do ploop=1,2
       if(l==0) write(211+ipot,*) '# L=',l,' # J=',0.0d0
       if(l.ge.1) write(211+ipot,*) '# L=',l,' # J=',0.5d0*j
       write(211+ipot,960) 0.d0,0.d0,0.d0
@@ -510,24 +510,36 @@ c     if(ipot==2) write(104,*)  nmax,abs(rmatrix),l,j
         r=i*drwf
         call phi_ho(Nm,l,r,b,ho_r)
         wf=dot_product(vector_C,ho_r(0:nmax))
+        wf=conjg(wf)
         if(ipot==1) wf=wf*perey(i)
         write(111+ipot,*) r,q*r*real(wf),q*r*aimag(wf)
+        if(l==0.and.ipot==2) write(123,*) 
+     ,       r,q*r*real(wf),q*r*aimag(wf)
         write(211+ipot,960) r,q*r*real(wf),q*r*aimag(wf)
+        write(311+ipot,*) r,(q*r*abs(wf))**2
+        if(l==0.and.ipot==2) write(323,*) 
+     ,       r,(q*r*abs(wf))**2
 c       write(112+npot,*) r,q*r*abs(wf)
         enddo
-        write(211+ipot,960) 0.d0,0.d0,0.d0
         do i = nr1+1,nr2
         r=i*drwf
         wf=(fcr(i,l)+0.5d0*im1*(1-smatrix)*(gcr(i,l)+im1*fcr(i,l)))/r/q
         wf=wf*cph
         if(ipot==1) wf=wf*perey(i)
         write(111+ipot,*) r,q*r*real(wf),q*r*aimag(wf)
+        if(l==0.and.ipot==2) write(123,*) 
+     ,       r,q*r*real(wf),q*r*aimag(wf)
         write(211+ipot,960) r,q*r*real(wf),q*r*aimag(wf)
+        write(311+ipot,*) r,(q*r*abs(wf))**2
+        if(l==0.and.ipot==2) write(323,*) 
+     ,       r,(q*r*abs(wf))**2
 c       write(112+npot,*) r,q*r*abs(wf)
         enddo
         write(111+ipot,*) ' '
+        write(311+ipot,*) ' '
+        if(l==0.and.ipot==2) write(123,*) ' '
+        if(l==0.and.ipot==2) write(323,*) ' '
 c       write(112+npot,*) ' '
-        enddo !ploop test
 
       endif
   960 format(f22.4,3d18.8)

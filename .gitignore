@@ -1,13 +1,23 @@
 # Calculation outputs
 fort.*
+*_????????_??????
 
 # Fortran 
 *.o
 *.mod
 *.a
 
-# hormat compiled
-./hormat-so
+# fortran compiled
+hormat-so
+front21.out
+twofnr20.out
+pChan_DOM
 
 # test twofnr dir
 test_twofnr/
+
+# comparing wfns and smat hormat to pChan
+Comparing_wfns_smat_pChan/
+
+# venv
+.venv

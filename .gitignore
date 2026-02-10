@@ -7,6 +7,10 @@ fort.*
 *.mod
 *.a
 
+# data
+*.dat
+*.csv
+
 # fortran compiled
 hormat-so
 front21.out
@@ -18,6 +22,7 @@ test_twofnr/
 
 # comparing wfns and smat hormat to pChan
 Comparing_wfns_smat_pChan/
+data_swapNLLELO/
 
 # venv
 .venv

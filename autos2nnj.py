@@ -98,7 +98,7 @@ if s2n[-1] != end:
 int_xsec = np.zeros(len(s2n))
 int_xsec_n_l = {}
 
-type_loc = ["NL", "LENLO", "LELO"]
+type_loc = ["LELO", "LENLO", "NL"]
 
 pmin = 0  # which potential type to calculate
 pmax = 2  # which potential type to calculate

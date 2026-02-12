@@ -67,7 +67,8 @@ z=40
 s2n=15.829
 heading=str(input("Heading file name (max 11 chars)\n"))
 elab=float(input("Lab energy (MeV)\n"))
-nl_pot = int(input("Which Non-local potential?\n[1] Tian Pang Ma potential\n[2] Perey-Buck potential\n"))
+nl_pot = int(input("Which Non-local proton potential?\n[1] Tian Pang Ma potential\n[2] Perey-Buck potential\n"))
+t_pot = int(input("Which local triton potential?\n[1] Li Global potential (E<40 MeV)\n[2] Pang Global potential\n "))
 if nl_pot==1:  # Tian Pang Ma potential
     Vr, rr, ar = -70.95, 1.29, 0.58
     Wv, rv, av = -9.03,  1.24, 0.50
@@ -82,6 +83,15 @@ elif nl_pot==2:  # Perey-Buck potential
     Vso, rso, aso = -14.35, 1.22, 0.65  
     rc = 1.25                          # Generally 1.25
     beta = 0.85
+else:
+    raise ValueError("Wrong proton potential input")
+
+if t_pot == 1:
+    tfnr_pot = 2
+elif t_pot == 2:
+    tfnr_pot = 3
+else:
+    raise ValueError("Wrong triton potential input")
 
 # Set up loop parameters and arrays
 start = 0.5
@@ -174,7 +184,7 @@ for p in range(pmin,pmax+1):                     # loop over NL/LE
                     f"1\n"                # no nonlocality in p channel
                     "0\n1\n1\n"           # spin in incident, p channel pot (ignore)
                     "1\n"                 # no nonlocality in t channel
-                    f"{l}\n1\n2\n"        # spin in outgoing channel, use Li potential
+                    f"{l}\n1\n{tfnr_pot}\n" # spin in outgoing channel, use Li or Pang potential
                     "1\n1\n"              # D0, zero-range
                     "1.25 0.65\n"         # di-neutron binding potential (radius and diffuseness)
                     "0\n0\n"              # di-neutron spin orbit, di-neutron nonlocality

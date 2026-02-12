@@ -35,14 +35,14 @@ if nl_pot==1:  # Tian Pang Ma potential
     Vr, rr, ar = -70.95, 1.29, 0.58
     Wv, rv, av = -9.03,  1.24, 0.50
     Wd, rd, ad = -15.74, 1.20, 0.45
-    Vso, rso, aso = -0.0001, 1.02, 0.59  # -8.13, 1.02, 0.59
+    Vso, rso, aso = -8.13, 1.02, 0.59  # -8.13, 1.02, 0.59
     rc = 1.34
     beta = 0.88
 elif nl_pot==2:  # Perey-Buck potential
     Vr, rr, ar = -71, 1.22, 0.65
     Wv, rv, av = 0.0, 0.0, 0.0           # not included in perey-buck pot so zero
     Wd, rd, ad = -15, 1.22, 0.47       
-    Vso, rso, aso = -0.0001, 1.22, 0.65 # -14.35, 1.22, 0.65
+    Vso, rso, aso = -14.35, 1.22, 0.65 # -14.35, 1.22, 0.65
     rc = 1.25                          # Generally 1.25
     beta = 0.85
 

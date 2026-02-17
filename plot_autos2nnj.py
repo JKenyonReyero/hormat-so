@@ -207,11 +207,13 @@ plt.show()
 
 x_offset = 0.02 * (max(s2n) - min(s2n))
 
-k = 3/(93)  # m_triton / (mtriton+90Zr)
+k = 90/(93)  # m_triton / (mtriton+90Zr)
 try:
-    triton_E = k*(float(pnl["elab"])+s2n-8.48)  # k(E_p + S2n - triton binding energy)
+    E_cm = k*float(pnl["elab"])
+    triton_E = k*(E_cm+s2n-8.48)  # k(E_p + S2n - triton binding energy)
 except:
-    triton_E = k*(28.53+s2n-8.48)  # Assume eE_p is 28.53MeV
+    E_cm = k*28.53
+    triton_E = (E_cm-s2n+8.48)  # Assume eE_p is 28.53MeV
 
 print(triton_E)
 fig, (ax1, ax2) = plt.subplots(

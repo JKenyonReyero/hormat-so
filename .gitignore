@@ -27,3 +27,4 @@ data_swapNLLELO/
 # venv
 .venv
 .vscode
+__pycache__/

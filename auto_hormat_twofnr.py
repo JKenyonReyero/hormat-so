@@ -99,7 +99,7 @@ else:
         print(s2n)
     elif a==92 and z==40:
         s2n=15.829
-        print("s2n = "+s2n)
+        print("s2n = "+str(s2n))
     else:
         s2n=float(input("2 neutron separation energy (MeV)\n"))
 

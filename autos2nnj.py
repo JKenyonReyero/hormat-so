@@ -228,12 +228,13 @@ pnl_dict = {
     "nmin": nmin,
     "nmax": nmax,
     "lmin": lmin,
-    "lmax": lmax
+    "lmax": lmax,
+    "elab": elab
 }
 with open(run_dir+"/pnl.txt", "w") as f:
     json.dump(pnl_dict, f, indent=4)
 
-print(f"pmin, pmax, nmin, nmax, lmin, lmax saved to {run_dir+"/pnl.txt"} in JSON format")
+print(f"pmin, pmax, nmin, nmax, lmin, lmax, elab saved to {run_dir+"/pnl.txt"} in JSON format")
 
 with open(run_dir+"/s2n.txt", "w") as f:
     json.dump(s2n.tolist(), f)

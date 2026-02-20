@@ -4,19 +4,21 @@
 *-----------------------------------------------------------------------
       program main
       implicit real*8 (a-h,o-z)
-      complex*16 pot1(400),potd1(800),ucn,pots(400),det,up(400)
-      complex*16 potz(800),potc(800),potd(800),uh(400),ui(400)
+      complex*16 pot1(600),potd1(1200),ucn,pots(600),det,up(600)
+      complex*16 potz(1200),potc(1200),potd(1200),uh(600),ui(600)
       complex*16 hp1,hp2,hm1,hm2,phas,uh1,uh2,ui1,ui2,al,bl,cl
-      complex*16 wfel(400),wfbu(400),potd1h(400),potd2h(400),du
-      complex*16 smatel(75),wfn(400),wfv(400),pl,ql,smatin(75)
-      complex*16 wxi,wxxi,smatbu(75),potn(800),pot2(400),potd2(800)
-      complex*16 VNL(151,151,0:60),smaref(75),famp(180),fcoul
-      dimension potd1o(800),potd2o(800),potd1oh(800),potd2oh(800) 
+      complex*16 wfel(600),wfbu(600),potd1h(600),potd2h(600),du
+      complex*16 potd1t(600),potd2t(600),pereyp(600),pereyr(600)
+      complex*16 smatel(75),wfn(600),wfv(600),pl,ql,smatin(75)
+      complex*16 wxi,wxxi,smatbu(75),potn(1200),pot2(600),potd2(1200)
+      complex*16 VNL(151,151,0:30),smaref(75),famp(180),fcoul
+      complex*16 deltaup(600)
+      dimension potd1o(1200),potd2o(1200),potd1oh(1200),potd2oh(1200) 
       dimension cf3(90),cg3(90),si2(90),cf4(90),cg4(90)
       real*8 xri(200), wri(200), pleg(60,60),plegndr(180),th,pi
-      real*8 xsecruth,sigma0,xxx(90 )
+      real*8 xsecruth,sigma0,xxx(90),xr,yr,zr
       character(len=20) :: otfile
-      integer :: ptc,ith,nth
+      integer :: ptc,ith,nth,ptl,ptx,istep,plo,ios
 *-----------------------------------------------------------------------
 *     common blocks
 *-----------------------------------------------------------------------
@@ -27,6 +29,11 @@
       common/potsparam/beta,tmas,hb,ptc,iterms
       common/gquad/xri,wri,pleg,igauss
       common/mean/iterm
+*-----------------------------------------------------------------------
+*     set perey factor to 1 default
+*-----------------------------------------------------------------------
+      pereyp = (1.0d0, 0.0d0)
+      pereyr = (1.0d0, 0.0d0)
 *-----------------------------------------------------------------------
 *     menu
 *-----------------------------------------------------------------------
@@ -45,6 +52,41 @@
        write(6,*) '   (needs potential file: dataDOM)          ' 
        read(5,*) ptc
       endif
+      if(isc==0) then
+       write(6,*) '  Import potential?                         '
+       write(6,*) '   Use datap potential         [0]          '
+       write(6,*) '   Import potential            [1]          ' 
+       write(6,*) '   (needs potential files: fort.117)     '
+       read(5,*) ptl
+      endif
+      if(ptl==1) then
+       write(6,*) '  Leading order or next to leading order?   '
+       write(6,*) '   Leading order               [0]          '
+       write(6,*) '   Next to leading order       [1]          ' 
+       read(5,*) plo
+       if(plo==1) then
+        open(unit=205, status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+         print *, 'Error opening file: fort.205'
+         stop
+        end if
+        read(205,*) n
+        do i = 1, n
+         read(205,*) xr, yr, zr
+C        Example: pack into complex numbers
+         pereyr(i) = xr
+         pereyp(i) = dcmplx(yr, zr)
+        end do
+       endif
+      endif
+      print *,' what step dr do you need?'
+      print *,' 0 is  (a-1)/a*0.1 fm'
+      print *,' 1 is  (a-2)/a*0.1 fm'
+      read *,istep
+      if(ptl==1) then
+       write(6,*) '  How many points in potential (e.g 240)    '
+       read(5,*) ptx
+      endif
       write(6,*)  '  Enter outfile data trailer                '
       read(5,*) otfile       
 *-----------------------------------------------------------------------
@@ -52,16 +94,12 @@
 *-----------------------------------------------------------------------
       open(27, file = 'smat_proton.'//otfile)
       open(16, file = 'wfns_proton.'//otfile)
-      open(17, file = 'wfns_proton_plot.'//otfile)
-      open(111, file = 'wfns_proton_abs.'//otfile)
-      open(112, file = 'wfns_proton_l0abs.'//otfile)
-      open(113, file = 'wfns_proton_l0.'//otfile)
       write(16,*) '# Channel distorted waves'
       open(36, file = 'Eff_pots.'//otfile)
 *-----------------------------------------------------------------------
 *     potz is vanishing coupling array for homogeneous solutions 
 *-----------------------------------------------------------------------
-      data potz/800*(0.d0,0.d0)/
+      data potz/1200*(0.d0,0.d0)/
 *-----------------------------------------------------------------------
 *     input data and calculate constants
 *-----------------------------------------------------------------------
@@ -104,10 +142,26 @@ c      if(ptc==0) beta=sqrt(0.011d0/(rmtarg/(rmtarg+1))*82.940d0)
       call coulfn(eta,rho1,lmax+15,cf3,cg3,si2)
       call coulfn(eta,rho2,lmax+15,cf4,cg4,si2)
 *-----------------------------------------------------------------------
-*     potentials (at maxj2=2*maxj c.m. points)
+*     deutpot potentials (at maxj2=2*maxj c.m. points)
 *-----------------------------------------------------------------------
-      call deutpot(potd1,potd1o,1)
-      call deutpot(potd2,potd2o,2)
+      if (ptl==0) then
+       call deutpot(potd1,potd1o,1)
+       call deutpot(potd2,potd2o,2)
+      endif
+      if (ptl==1) then
+*-----------------------------------------------------------------------
+*     importpot potentials (at ulocn-pb_MOD.f c.m. points)
+*-----------------------------------------------------------------------
+       print*, ' maxj = ',maxj, ' step = ',h
+       call importpot(potd1)
+       call importpot(potd2)
+       potd1o(:)=0
+       potd2o(:)=0
+*       print*,potd1
+      endif
+*      write(20,'(5e14.7)') real(potd1)
+*      write(21,'(5e14.7)') aimag(potd1)
+      
 *-----------------------------------------------------------------------
 *     and at maxj c.m. points
 *-----------------------------------------------------------------------
@@ -117,6 +171,8 @@ c      if(ptc==0) beta=sqrt(0.011d0/(rmtarg/(rmtarg+1))*82.940d0)
        potd1oh(i)=potd1o(2*i-1)
        potd2oh(i)=potd1o(2*i-1)
       enddo
+*      write(22,'(5e14.7)') real(potd1h)
+*      write(23,'(5e14.7)') aimag(potd1h)
 *-----------------------------------------------------------------------
 *     potential 2 calculations - not relevant if nonlocal case
 *-----------------------------------------------------------------------
@@ -342,24 +398,20 @@ c     if(l==3) smatin(4)=(   0.3813415538, -0.2670806921 )
 
       if(l==0) then
        write(16,*) '# L=',l
-       write(17,*) ' '
-       write(111,*) ' '
        do i=1,maxj
         write(16,960) (i-1)*h,up(i)
-        write(17,960) (i-1)*h,up(i)
-        write(111,*) (i-1)*h,abs(up(i))**2
-        write(112,*) (i-1)*h,abs(up(i))**2
-        write(113,*) (i-1)*h,real(up(i)),aimag(up(i))
+c        write(16,960) (i-1)*h,up(i)*pereyp(i)
+c        write(6,*) up(i),pereyp(i),up(i)*pereyp(i)
        enddo
       elseif (l.ge.1) then
        do k = 1,2
         write(16,*) '# L=',l
-        write(17,*) ' '
-        write(111,*) ' '
+c        write(6,*) maxj
         do i=1,maxj
          write(16,960) (i-1)*h,up(i)
-         write(17,960) (i-1)*h,up(i)
-         write(111,*) (i-1)*h,abs(up(i))**2
+c        write(16,960) (i-1)*h,up(i)*pereyp(i)
+c         write(6,*) up(i),pereyp(i),up(i)*pereyp(i)
+
         enddo
        enddo
       endif
@@ -467,7 +519,7 @@ c     const=0
 *-----------------------------------------------------------------------
       subroutine potadi(potd)
       implicit real*8 (a-h,o-z)
-      complex*16 potd(800),ucn
+      complex*16 potd(1200),ucn
       common/a/con1,rmu,ecm,ucn,h,l,maxj,rmtarg,rmproj,ztarg,con2,const
       common/jat/h2,maxj2,lmax,rk2,rka,eta,icalr,iwfnr,ball,con
       potd(1)=(0.d0,0.d0)
@@ -482,8 +534,9 @@ c     const=0
 *-----------------------------------------------------------------------
       subroutine deutpot(potd,potdo,ipot)
       implicit real*8 (a-h,o-z)
-      complex*16 ucn,potd(800)
-      dimension potdo(800)
+      real*8 rr,potrr,potii
+      complex*16 ucn,potd(1200)
+      dimension potdo(1200)
       common/a/con1,rmu,ecm,ucn,h,l,maxj,rmtarg,rmproj,ztarg,con2,const
       common/jat/h2,maxj2,lmax,rk2,rka,eta,icalr,iwfnr,ball,con
       common/bg/v1r,r1,a1,w1i,r1i,a1i,wv1i,v2r,r2,a2,w2i,r2i,a2i,wv2i,rc
@@ -504,10 +557,25 @@ c     const=0
       print 12,v1r,r1,a1,w1i,r1i,a1i,wv1i
       print 18,'rc = ',rc,' vso = ',v1so,' rso = ',r1so,' aso = ',a1so
       do i=1,maxj2
+c       print*,i
+c      need to write r, potr, poti to another file and then read it in
+c      again, compare read file to calculated potential to double check
+c      the read was done properly.
+c      can keep the section that does if r=rr to make sure the step is correct.
        r=(i-1)*h2
        potr=ws(r,v1r,r1*a13,a1)
        poti=wsd(r,w1i,r1i*a13,a1i)
        if(wv1i.gt.0.d0) poti=poti+ws(r,wv1i,r1i*a13,a1i)
+c       write(24,*)r,potr,poti
+c       if (i/=1) then
+c       print*,i,r
+c       read(17,*)rr,potr,poti
+c       if (r/=rr) then
+c       print*, "r/=r for ",i
+c       print*, "r rr",r,rr
+c       stop
+c       endif
+c       endif
        potd(i)=cmplx(potr,poti)+coul(rc*a13,r)
        if(r.eq.0) then
         potdo(1)=0.d0
@@ -515,6 +583,7 @@ c     const=0
         potdo(i)=wso(r,v1so,r1so*a13,a1so)
        endif
       enddo 
+c      print*,potd
       endif
       if(ipot.eq.2) then
       print 12,v2r,r2,a2,w2i,r2i,a2i,wv2i
@@ -542,8 +611,8 @@ c     const=0
 *-----------------------------------------------------------------------
       subroutine source(pot1,pot2,wf,pots,VNL,niter,isc)
       implicit real*8 (a-h,o-z)
-      complex*16 ucn,pot1(400),pot2(400),wf(400),pots(400)
-      complex*16 VNL(151,151,0:60),NLS(151),loceqv 
+      complex*16 ucn,pot1(600),pot2(600),wf(600),pots(600)
+      complex*16 VNL(151,151,0:30),NLS(151),loceqv 
       common/a/con1,rmu,ecm,ucn,h,l,maxj,rmtarg,rmproj,ztarg,con2,const
       common/jat/h2,maxj2,lmax,rk2,rka,eta,icalr,iwfnr,ball,con
       common/mean/iterm
@@ -575,7 +644,7 @@ c     const=0
 *     NLS - resultant NL source term
 *     R   - radial coordinate
 *-----------------------------------------------------------------------
-      complex*16 wf(400),NLS(151),VNL(151,151,0:60),intin(151),intres
+      complex*16 wf(600),NLS(151),VNL(151,151,0:30),intin(151),intres
       real*8, parameter :: fpi = 16.d0*datan(1.d0)
       integer :: ptc
       common/potsparam/beta,tmas,hb,ptc,iterms
@@ -608,7 +677,7 @@ c     const=0
 *     Build array of nonlocal array in proton channel from the users 
 *     choice of potential
 *-----------------------------------------------------------------------
-      complex*16 VNL(151,151,0:60)
+      complex*16 VNL(151,151,0:30)
       real*8 V0,W0,a0,r0,R_0,UFFRE,UFFIM,R,RP,hb,beta,tmas 
       integer i,j,k,lmax,ptc,ipval
       common/jat/h2,maxj2,lmax,rk2,rka,eta,icalr,iwfnr,ball,con
@@ -682,7 +751,7 @@ c      R_0 = r0*tmas - 0.285d0
       if (ptc==1) then
        !Tian,Pang,Ma  
        ap  = 0.58d0!  woods-saxon diff  
-       rp  = 1.29d0!  woods-saxon rad
+       rp  = 1.25d0!  woods-saxon rad
        Vp  = -70.95d0! potential depth 
        R_p = rp*tmas 
        apS  = 0.50d0!  woods-saxon diff  
@@ -819,18 +888,21 @@ c      R_0 = r0*tmas - 0.285d0
 *-----------------------------------------------------------------------
       subroutine interp (v,h,n,vp,hp,np)
       implicit real*8 (a-h,o-z)
-      complex*16 v(400),vp(800)
+      complex*16 v(600),vp(1200)
+c      print*,v
       pp=0.d0
       v120=1.d0/120.d0
       dx=hp/h
       x=0.d0
       imax=n-3
+c      print*, np
       do 200 j=1,np
       x=x+dx
       i=x
       i=max0(i,3)
       i=min0(i,imax)
       p=x-dfloat(i)
+c      print*, p
       if (p) 120,110,120
   110 vp(j)=v(i)
       go to 200
@@ -864,7 +936,7 @@ c      R_0 = r0*tmas - 0.285d0
 *     the number of coupled channels is nc. array vpot contains potentia
 *     in steps of h/2 (diagonal) and vcoup(i,j) the coupling potentials.
 *-----------------------------------------------------------------------
-      complex*16 y(2),f(2),g(2),s(2),du,vpot(800),u(400),vcoup(800)
+      complex*16 y(2),f(2),g(2),s(2),du,vpot(1200),u(600),vcoup(1200)
 *-----------------------------------------------------------------------
 *     set odd y's to functions and even y's to derivatives.
 *-----------------------------------------------------------------------
@@ -1281,6 +1353,44 @@ c      R_0 = r0*tmas - 0.285d0
       return
       end
 
+      subroutine importpot(potd2)
+      logical :: exists
+      integer :: ptx,ii,nnr
+      complex*16 potd(600),potd2(1200)
+      real*16    potr(600),poti(600),dr,r(600)
+      character(len=20) :: filename
+      potd(:)=(0d0,0d0)
+      potd2(:)=(0d0,0d0)
+
+
+      inquire(file="fort.117", exist=exists)
+      if (exists) goto 390
+      print*,"fort.117 does not exist. Terminating"
+      stop
+ 390  continue
+      open(117, action="read")
+      read(117,*) nnr, dr
+      print*, ' nnr = ',nnr, ' dr = ',dr
+      do ii=1, nnr
+       read(117,*) r(ii), potr(ii), poti(ii)
+       potd(ii) = dcmplx(potr(ii), poti(ii))
+      enddo
+      close(117)
+c     Now need to interp values since code is expecting maxj *2 points
+      call interp(potd,0.1d0,600,potd2,0.05d0,1200)
+
+      open(100,file='potd',status='unknown')
+      do ii=1, 600
+       write(100,*) potd(ii)
+      enddo
+      close(100)
+
+      open(101,file='potd2',status='unknown')
+      do ii=1, 1200
+       write(101,*) potd2(ii)
+      enddo
+      close(101)
+      end
 *     ------------------------------------------------------------------
       subroutine sigma(lmax,eta,sigma0,sigmad)                          
       implicit real*8(a-h,o-z)                                          
@@ -1311,7 +1421,7 @@ c      R_0 = r0*tmas - 0.285d0
       do 30 l=2,lmax                                                    
       fl1=l-1                                                           
       sigmad(l)=sigmad(l-1)+atan (eta/fl1)                              
-      print *,' COulomb phase shift',l,sigmad(l)
+      print *,' Coulomb phase shift',l,sigmad(l)
    30 continue                                                          
       return                                                            
       end                                                               

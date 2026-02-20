@@ -1,5 +1,5 @@
 DATAP_TEMPLATE = """{a}   {z}    {elab}    {qval}
-0.1  {nstep}   30
+0.1  {nstep}   {lmax}
 60
 49.0303    1.1998   0.69
 7.4458    1.2363   0.69

@@ -76,7 +76,7 @@ E = [0.000,3.661,4.267,4.450,7.010,7.559,7.559,7.710,7.840,7.935,8.281,8.822,9.0
 # Take input
 #--------------------------------------------------------------
 # Heading of files
-heading=str(input("Heading file name (max 11 chars)\n"))
+heading=str(input("Heading file name (max 20 chars)\n"))
 use_row=int(input("Do you want to use a row of the table for inputs?\n" \
 "0: no, let me enter my own\n" \
 "1-41: that row\n"))
@@ -104,6 +104,7 @@ else:
         s2n=float(input("2 neutron separation energy (MeV)\n"))
 
 elab=float(input("Lab energy (MeV)\n"))
+lmax=int(input("Lmax 30 is fine for ~30MeV (max for pChan is 59):\n"))
 
 
 #--------------------------------------------------------------
@@ -124,10 +125,10 @@ hormat_in = (
     "-70.95 1.29 0.58 1.34 0.88\n"
     "-9.03 1.24 0.50  -15.74  1.20 0.45\n"
     "-0.00001   1.20 0.45 0.59\n"
-    "00 30\n"            # number of partial waves, Lmin, Lmax
-    "  12\n"
-    "  3.0  2.71472\n"
-    "     16\n"
+    f"00 {lmax}\n"            # number of partial waves, Lmin, Lmax, 00 30
+    "  13\n"             # 13
+    "  2.508944854380166\n"   # harmonic oscilator radius 3.0 2.71472------2.68 for 65 MeV 2.508944854380166 40 MeV
+    "     16\n"          # nmax 16
 )
 # make file
 with open(run_dir+"/hormat/data_hormat", "w") as f:
@@ -143,7 +144,8 @@ pChan_dp = DATAP_TEMPLATE.format(
     z=z,
     elab=elab,
     qval=0.0,
-    nstep=200
+    nstep=200,
+    lmax=lmax
 )
 # make datap
 with open(run_dir+"/pChan/datap", "w") as f:
@@ -162,7 +164,7 @@ for i in range(0,len(names)):
         f"0\n{elab}\n"         # calc t wfns, Elab
         f"{a} {z}\n"            # A, Z targ
         f"2\n19.9 0.1\n"      # Integration ranges 0 - 19.9fm in 0.1 fm step
-        "2\n30\n"             # number of partial waves
+        f"2\n{lmax}\n"        # number of partial waves
         "0 0 0\n"             # default angles
         f"{j} {j}\n{n}\n"     # quantum numbers L and J and nodes
         f"1\n{E_E+s2n}\n"     # use s2n, excitation E +s2n
@@ -218,6 +220,9 @@ for i in range(0,len(names)):
             cwd=run_dir+"/"+names[i]
         )
         print("Done running pChan")
+        print(pChan_result.returncode)
+        print(pChan_result.stdout)
+        print(pChan_result.stderr)
         shutil.copy(run_dir+"/"+names[i]+"/wfns_proton."+heading, run_dir+"/"+names[i]+"/tfnr/fort.16")
         # Run front
         f21_result = subprocess.run(
@@ -238,9 +243,17 @@ for i in range(0,len(names)):
         print("Done running twoFNR for pChan")
 # todo plot result of codes
 subprocess.run(
-    ["xmgrace"] + [run_dir+"/hormat/tfnrNL/21.hormat"] + [run_dir+"/pChan/tfnr/21.pChan"]
+    ["xmgrace"] + [run_dir+"/hormat/tfnrNL/21.hormat"] + [run_dir+"/pChan/tfnr/21.pChan"] + ["test2,68horad_20260219_134337/hormat/tfnrNL/21.hormat"]
 )
 
 subprocess.run(
     ["xmgrace"] + [run_dir+"/hormat/tfnrNL/21.hormat"] + [run_dir+"/hormat/tfnrLENLO/21.hormat"] + [run_dir+"/hormat/tfnrLELO/21.hormat"]
+)
+
+subprocess.run(
+    ["xmgrace"] + [run_dir+"/hormat/fort.113"] + [run_dir+"/pChan/tfnr/fort.16"]
+)
+
+subprocess.run(
+    ["xmgrace"] + ["-nxy"] + [run_dir+"/hormat/fort.124"] + [run_dir+"/pChan/fort.123"]
 )

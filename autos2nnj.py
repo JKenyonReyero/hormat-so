@@ -43,6 +43,19 @@ def find_int_xsec(twofnr20_result):
     else:
         print("-----------------------\nNO OUTPUT INTEGRATED XSEC FOUND FROM TWOFNR\n-----------------------")
         return 0  
+import re
+
+def find_exit_ecm(twofnr20_result):
+    match = re.search(
+        r"exit channel\s*.*?\becm=\s*([0-9.+-Ee]+)",
+        twofnr20_result.stdout,
+        re.DOTALL
+    )
+    if match:
+        return float(match.group(1))
+    else:
+        print("-----------------------\nNO EXIT CHANNEL ECM FOUND\n-----------------------")
+        return 0
 
 def save_int_xsec_n_l(my_dict, my_dir):
     np.savez(
@@ -106,6 +119,7 @@ if s2n[-1] != end:
     s2n = np.append(s2n, end)
 
 int_xsec = np.zeros(len(s2n))
+exit_ecm = np.zeros(len(s2n))
 int_xsec_n_l = {}
 
 type_loc = ["LELO", "LENLO", "NL"]
@@ -117,6 +131,8 @@ nmax = 4  # max nodes: 4
 lmin = 0  # min ang mom: 0
 lmax = 5  # max ang mom: 5
 
+tfnr_run_times = 0
+found_exit_ecm = False
 
 #--------------------------------------------------------------
 # Set up directories
@@ -136,7 +152,7 @@ hormat_in = (
     f"{Vso}   {rso} {aso}\n"
     "00 30\n"            # number of partial waves, Lmin, Lmax
     "  12\n"
-    "  3.0  2.71472\n"
+    "  2.508944854380166\n"  # 3.0 default, 2.508944854380166 for 40MeV
     "     16\n"
 )
 # make file
@@ -205,12 +221,15 @@ for p in range(pmin,pmax+1):                     # loop over NL/LE
                     capture_output=True,
                     cwd=current_dir
                 )
+                tfnr_run_times +=1
                 # save twofnr output
                 with open(current_dir+f"/out.{identifier}", "w") as f:
                     f.write(twofnr20_result.stdout)
                 
                 int_xsec[i] = find_int_xsec(twofnr20_result)
-            
+                if found_exit_ecm == False:
+                    exit_ecm[i] = find_exit_ecm(twofnr20_result)
+            found_exit_ecm = True
             with open(current_dir+"/int_xsecs", "w") as f:
                 for i in range(0,len(s2n)):
                     f.write(f"{s2n[i]:12.6f} {int_xsec[i]:12.6e}\n")
@@ -239,9 +258,13 @@ print(f"pmin, pmax, nmin, nmax, lmin, lmax, elab saved to {run_dir+"/pnl.txt"} i
 with open(run_dir+"/s2n.txt", "w") as f:
     json.dump(s2n.tolist(), f)
 
+with open(run_dir+"/exit_ecm.txt", "w") as f:
+    json.dump(exit_ecm.tolist(), f)
+
 print(f"s2n array saved to {run_dir+"/s2n.txt"} in JSON format")
 
 end_time = datetime.now()
 elapsed = end_time - start_time
 
 print(f"Total runtime: {elapsed}")
+print(f"Total time twoFNR run: {tfnr_run_times}")

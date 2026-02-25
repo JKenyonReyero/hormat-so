@@ -1,4 +1,4 @@
-c+mu-----------------------------------------------------------------------
+c-----------------------------------------------------------------------
       module potential_parameters
       Save
       integer nr2
@@ -15,6 +15,14 @@ c     real *8, dimension(:),allocatable :: wk
       complex*16, dimension(:),allocatable :: wk
       end module temporary
 c-----------------------------------------------------------------------
+      module talmi_storage
+      integer,allocatable,dimension(:) :: ina,indl,indn
+      real*8 ,allocatable,dimension(:) :: g0_coef,taln2
+      real*8,allocatable,dimension(:,:,:) :: cgc,cj9,talmik
+      end module talmi_storage
+c-----------------------------------------------------------------------
+
+c-----------------------------------------------------------------------
 c-----------------------------------------------------------------------
 C     Main  program starts
 c-----------------------------------------------------------------------
@@ -24,7 +32,7 @@ c-----------------------------------------------------------------------
       use potential_parameters
       implicit real *8 (a-h,o-z)
       real *8,allocatable, dimension(:)  :: phin0,g,f,r2int,coul_0,angle
-     , ,f2,r4int,ho,flog,fc,gc,dfc,dgc,coulphas,f21,x1,x2,hbeta,ho_r
+     , ,f2,r4int,ho,flog,fc,gc,dfc,dgc,coulphas,f21,x1,x2,hbeta,ho_r,dho
 c     real *8,allocatable, dimension(:,:) :: vlsmat1
       real *8,allocatable, dimension(:,:) :: fcr,gcr,pleg,pleg1,vlsmat
       complex *16,allocatable, dimension(:,:,:) :: d2mat
@@ -144,6 +152,7 @@ c     need_wfs=.false.
       ! calculate and store HO wave functions phi_{n0} at r = 0
 
       allocate(ho(0:ntotmax),phin0(0:ntotmax),hbeta(0:ntotmax))
+      allocate(dho(0:ntotmax))
       if(need_wfs) allocate(ho_r(0:ntotmax))
       call phi_ho(ntotmax,0,0.d0,b,phin0)
       hbeta=phin0*h32*[(hbb**i,i=0,ntotmax)]
@@ -359,6 +368,8 @@ c     enddo
 
       if(2==1) stop
 
+      call store_TM_parts(nmax,lmax)
+
       famp=0
       gamp=0
 
@@ -368,17 +379,22 @@ c     enddo
       ! Construct  NxN matrices for H+L(0) in HO-basis for each L  
 
       call phi_ho(Nm,l,a,b,ho)
+      call dphi_ho(Nm,l,a,b,ho,dho)
 
       cl=(-1)**L/sqrt(2*l+1.d0)
       onorm=0
       do N = 0,nmax
       !                      derivative of phi
-      dphi=(dfloat(2*N+L)/a-a/b2)*ho(N)
-      if(N /=0) dphi=dphi-2.d0/a*(N+L+0.5d0)*ho(N-1)
-     &              *sqrt(dfloat(n)/(n+l+0.5d0)) 
+c     dphi=(dfloat(2*N+L)/a-a/b2)*ho(N)
+c     if(N /=0) dphi=dphi-2.d0/a*(N+L+0.5d0)*ho(N-1)
+c    &              *sqrt(dfloat(n)/(n+l+0.5d0)) 
 
-      do Np = 0,nmax
-c     do Np = 0,N    
+      dphi=dho(N)
+
+c     do Np = 0,nmax
+      do Np = 0,N    
+
+      dphi_Np=dho(Np)
 
       onorm=0
       r2=0
@@ -386,28 +402,45 @@ c     do Np = 0,N
       Vc=0
       Vls=0
       Vls1=0
-         do n1=0,N+Np+L
+         do n1=0,(N+Np+L)/2
          n2=N+Np+L-n1
-         talmi=trb8(n1,0,n2,0,0,Np,L,N,L)
-c        print *,l,N,Np ,n1,n2,talmi
-         onorm=onorm+talmi*phin0(n1)*r2int(n2)
-         r2   =r2   +talmi*phin0(n1)*r4int(n2)
-         Vloc(0) =Vloc(0) +talmi*phin0(n1)*Vlint(n2,0)
-         Vloc(1) =Vloc(1) +talmi*phin0(n1)*Vlint(n2,4)
-         Vloc(2) =Vloc(2) +talmi*hbeta(n1)*Vlint(n2,1)
-         Vc =Vc+talmi*phin0(n1)*Vlint(n2,2)
-         Vls=Vls+talmi*phin0(n1)*Vlint(n2,3)
-         Vls1=Vls1+talmi*phin0(n1)*Vlint(n2,5)
-c        print *,N,Np ,phin0(n1)*talmi*Vlint(n2)
-c    ,     ,hbeta(n1)*talmi*Vlint(n2)
-c        print *,Np,N,n1,n2,talmi,Vlint(n2),hbeta(n1)
+         talmi=talmi_mine(n1,n2,Np,N,L)
+         if(n1==n2) then
+         m2l=0
+         else
+         m2l=(-1)**l
+         endif
+         onorm=onorm+talmi*(phin0(n1)*r2int(n2)+m2l*phin0(n2)*r2int(n1))
+         r2   =r2   +talmi*(phin0(n1)*r4int(n2)+m2l*phin0(n2)*r4int(n1))
+         Vloc(0)=Vloc(0)
+     ,          +talmi*(phin0(n1)*Vlint(n2,0)+m2l*phin0(n2)*Vlint(n1,0))
+         Vloc(1)=Vloc(1)
+     ,          +talmi*(phin0(n1)*Vlint(n2,4)+m2l*phin0(n2)*Vlint(n1,4))
+         Vloc(2)=Vloc(2)
+     ,          +talmi*(hbeta(n1)*Vlint(n2,1)+m2l*hbeta(n2)*Vlint(n1,1))
+         Vc=Vc  +talmi*(phin0(n1)*Vlint(n2,2)+m2l*phin0(n2)*Vlint(n1,2))
+         Vls=Vls+talmi*(phin0(n1)*Vlint(n2,3)+m2l*phin0(n2)*Vlint(n1,3))
+       Vls1=Vls1+talmi*(phin0(n1)*Vlint(n2,5)+m2l*phin0(n2)*Vlint(n1,5))
          enddo
-       tkin=(onorm*(2*N+L+1.5d0)-0.5d0*r2)*hmb
-       bloch=h2m*(a*ho(N)*ho(Np)+a2*ho(Np)*dphi)
+c      tkin=(onorm*(2*N+L+1.5d0)-0.5d0*r2)*hmb
+       tkin_NpN=(onorm*(2*N +L+1.5d0)-0.5d0*r2)*hmb
+       tkin_NNp=(onorm*(2*Np+L+1.5d0)-0.5d0*r2)*hmb
+c      bloch=h2m*(a*ho(N)*ho(Np)+a2*ho(Np)*dphi)
+       bloch_NpN=h2m*(a*ho(N)*ho(Np)+a2*ho(Np)*dphi)
+       bloch_NNp=h2m*(a*ho(Np)*ho(N)+a2*ho(N)*dphi_Np)
 c      d2mat(Np,N,:)=(tkin+Vloc(:)+Vc-Ecm*onorm)*cl+bloch
-       d2mat(Np,N,:)=(tkin+Vloc(:)+Vc-Ecm*onorm)*cl
+c      print *,'  Np,N',Np,N
+       d2mat(Np,N,:)=(tkin_NpN+Vloc(:)+Vc-Ecm*onorm)*cl+bloch_NpN
+       if(Np/=N)
+     , d2mat(N,Np,:)=(tkin_NNp+Vloc(:)+Vc-Ecm*onorm)*cl+bloch_NNp
+c                  if(N==np.and.N==nmax)  print*,dphi,dphi_NP
+c    ,    *,d2mat(Np,N,0),tkin_NpN,vloc(0),vc,ecm,onorm,cl,bloch_NpN
+
+
+c      print *,' dmats',d2mat(Np,N,0)
+c      print *,' dmats',d2mat(N,Np,0)
 c      print *,N,Np,tkin,Vloc(npot),Vc,onorm !bloch,d2mat(Np,N,npot),bloch+d2mat(Np,N,npot)
-       d2mat(Np,N,:)=d2mat(Np,N,:)+bloch
+c      d2mat(Np,N,:)=d2mat(Np,N,:)+bloch
 c      d2mat(Np,N,:)=(tkin+Vloc(:)+Vc-Ecm*onorm)*cl
 c      d2mat(N,Np,:)=d2mat(Np,N,:)
 c       bloch1=h2m*(a*ho(N)*ho(Np)+a2*ho(Np)*dphi)
@@ -418,8 +451,8 @@ c      d2mat(Np,N,:)=0
        vlsmat(Np,N)=Vls*cl
        vlsmat1(Np,N)=Vls1*cl
 c      d2mat(N,Np,:)=d2mat(Np,N,:)
-c      vlsmat(N,Np)=vlsmat(Np,N)
-c      vlsmat1(N,Np)=vlsmat1(Np,N)
+       vlsmat(N,Np)=vlsmat(Np,N)
+       vlsmat1(N,Np)=vlsmat1(Np,N)
       enddo
 
 
@@ -433,6 +466,8 @@ c     print*,'d2mat',d2mat(:,:,npot)
       enddo
 
 c     print*,'d2mat',d2mat(:,:,npot)
+
+c     print*,'d2mat',d2mat(:,:,0)
 
       do ipot=0,npot
 c     do ipot=npot,npot
@@ -610,6 +645,18 @@ c     CALL stallingloop
       end
           
 
+      subroutine dphi_ho(nmax,l,a,b,ho,dhowf)
+      implicit real *8 (a-h,o-z)
+      dimension ho(0:nmax),dhowf(0:nmax)
+      b2=b**2
+      do n=0,nmax
+      dphi=(dfloat(2*N+L)/a-a/b2)*ho(N)
+      if(N /=0) dphi=dphi-2.d0/a*(N+L+0.5d0)*ho(N-1)
+     &              *sqrt(dfloat(n)/(n+l+0.5d0)) 
+      dhowf(n)=dphi
+      enddo
+      return
+      end
 
       subroutine local_integrals(nmax,a,b,Vlint,ecm,an)
       use potential_parameters
@@ -620,7 +667,7 @@ c     CALL stallingloop
       dr=drwf*0.5
 
       vlint=0
-      npoint=a/dr*3*5
+      npoint=a/dr*4
 c     npoint=150
 
       if(an/=0) then
@@ -661,9 +708,10 @@ c       write(801,*) r,aimag(uloc0(i)),aimag(delta_U),aimag(uloc1(i))
       deallocate(d1uloc,d2uloc)
       endif
 
-      do i=1,nr2
-      print *,drwf*i,perey(i)
-      enddo
+c     do i=1,nr2
+c     print *,drwf*i,perey(i)
+c     enddo
+
 
 
 
@@ -673,7 +721,7 @@ c       write(801,*) r,aimag(uloc0(i)),aimag(delta_U),aimag(uloc1(i))
       coul0=vcoul/r
       if(r.ge.rcoul) coul=coul0
       if(r.lt.rcoul) coul=vcoul*(3.d0-(r/rcoul)**2)/rcoul*0.5d0
-
+     
       call phi_ho(nmax,0,sqrt2*r,b,ho)
       pt=pot(r)
       write(805,*) r,real(pt),aimag(pt)
@@ -861,5 +909,154 @@ c     real *8     un,ul,xi,xnew,fx,dfx,uu
       df1(n)=3*f(n)-4*f(n-1)+f(n-2)
       df1=0.5d0*df1/h
 
+      return
+      end
+
+
+
+      subroutine store_TM_parts(nmax,lmax)
+      use talmi_storage
+      implicit real *8 (a-h,o-z)
+
+      ntotmax=2*(2*nmax+lmax+1) 
+      allocate(taln2(0:ntotmax),talmik(0:ntotmax,0:ntotmax,0:ntotmax))
+
+      talmik(0,0,0)=1
+      do ne=0,2*(2*nmax+lmax+1)  !  n is energy
+
+      ! taln2 is ne!!/n2!! for a fixed ne
+      taln2(ne)=1
+c     print *,ne,ne,taln2(ne)
+      do n2=ne-2,0,-2
+      taln2(n2)=taln2(n2+2)*dfloat(n2+2)
+c     print *,ne,n2,taln2(n2)
+      enddo
+
+      ii=mod(ne,2)!
+
+      ! talmik(n,n1,n2) is n!!/(n1!! n2!!) for n,n1 and n2  being of the
+      ! same parity
+
+      do n2=ne,0,-2
+      tk=taln2(n2)
+      talmik(ne,ii,n2)=tk
+c     print*,'logtk',ne,ii,n2,tk
+      do n1=ii+2,ne,2
+      tk=tk/dfloat(n1+0)
+      talmik(ne,n1,n2)=tk  ! here ne,n1,n2 are energies
+c     print*,'logtk',ne,n1,n2,log(tk)
+      enddo
+      enddo
+
+      enddo
+       
+      talmik=log(talmik)
+ 
+      ntot=2*(2*nmax+lmax)
+      indd=0
+      do ne=0,ntot,2
+      do nea=0,ne
+      do la=nea,0,-2
+      lb=la
+      neb=ne-nea
+      if(lb<=neb) then
+      indd=indd+1
+c     print *,ne,nea,la,neb,indd
+      endif
+      enddo
+      enddo
+      enddo
+
+      allocate(ina(-1:ntot/2),g0_coef(indd),indl(indd),indn(indd))
+
+      ina(-1)=0
+      indd=0
+      do ne=0,ntot,2   !n is energy
+      node=ne/2
+      do nea=0,ne
+      do la=nea,0,-2
+      lb=la
+      neb=ne-nea
+      if(lb<=neb) then
+      indd=indd+1
+      vccab=(-1)**la
+c     print *,ne+1,nea+la+1,neb+lb+1,talmik(ne+1,nea+la+1,neb+lb+1)
+      tkab=0.5d0*(talmik(ne,nea-la,neb-lb)
+     ,           +talmik(ne+1,nea+la+1,neb+lb+1))
+      g0_coef(indd)=tkab
+c     print*,'store',ne,nea,la,tkab,indd
+      indn(indd)=nea
+      indl(indd)=la
+      endif
+      enddo
+      enddo
+      ina(ne/2)=indd
+c     print*,'ina', ne,indd
+      enddo
+c     print*,'ina',ina
+
+c     print *,' g0 coef done'
+
+
+      call fctrl
+      call facl(1.d0)
+
+      allocate(cgc(0:2*nmax+lmax,0:2*nmax+lmax,0:lmax))
+      allocate(cj9(0:2*nmax+lmax,0:2*nmax+lmax,0:lmax))
+      cgc=0
+      cj9=0
+      do L=0,lmax
+      do la=0,2*nmax+Lmax
+      do lc=0,2*nmax+lmax
+      cgc(la,lc,L)=vcc(2*la,2*lc,2*L,0,0)*sqrt((1.d0+2*la)*(1.d0+2*lc))
+      cj9(la,lc,L)=winej(2*la,2*la,0,2*lc,2*lc,0,2*L,2*L,0)
+c     print*,la,lc,l,cgc(la,lc,l),cj9(la,lc,l)
+      enddo
+      enddo
+      enddo
+
+      return
+      end
+
+      function talmi_mine(n1,n2,N,Np,l)
+      use talmi_storage
+      implicit real *8 (a-h,o-z)
+
+      dd=1
+         talmi_mine=0
+         cd=dd**(n1-N)/(1+dd)**(n1+n2)
+         sumtm=0
+         do inda=ina(n1-1)+1,ina(n1)
+         g0a=g0_coef(inda)
+         la=indl(inda)
+         nea=indn(inda)
+         neb=2*n1-nea
+         lb=la
+         if(lb<=neb) then
+          do indc=ina(n2-1)+1,ina(n2)
+          lc=indl(indc)
+          nec=indn(indc)
+          
+          ld=lc
+          ned=2*n2-nec
+
+c         if(abs(la-lc)>=l.and.la+lc<=L) then
+          if(ld<=ned.and.nea+nec==2*N+L.and.neb+ned==2*Np+L) then
+          if(cgc(la,lc,L)/=0.and.cgc(lb,ld,L)/=0) then
+
+          g0b=g0_coef(indc)
+          g0c=0.5d0*(talmik(2*N,nea-la,nec-lc)
+     ,           +talmik(2*N+2*L+1,nea+la+1,nec+lc+1))
+          g0d=0.5d0*(talmik(2*Np,neb-lb,ned-ld)
+     ,           +talmik(2*Np+2*L+1,neb+lb+1,ned+ld+1))
+          sumtm=sumtm+exp(g0a+g0b+g0c+g0d)*cj9(la,lc,L)
+     ,         *(-dd)**ned*cd*cgc(la,lc,L)*cgc(lb,ld,L)
+     ,         *cgc(la,lb,0)*cgc(lc,ld,0)
+          endif
+          endif
+          enddo
+          endif
+          enddo
+      talmi_mine=sumtm
       return
       end

@@ -6,6 +6,14 @@ gfortran hormat-so.f rmatrix.o trb8.o -o hormat-so -llapack -lblas
 To run:
 ./hormat-so <data-file
 
+Now for updated code (hormat-tm-1):
+To compile:
+gfortran -c -w rmatrix.f trb8.f fctrl.f vcc.f
+
+gfortran -O3 hormat-tm-1.f rmatrix.o trb8.o fctrl.o vcc.o -o hormat-tm-1 -llapack -lblas 
+
+O3 is an optimisation option.
+
 Output files:
 
 fort.101 - Unknown/not written here yet

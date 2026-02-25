@@ -106,17 +106,26 @@ elif t_pot == 2:
 else:
     raise ValueError("Wrong triton potential input")
 
+temp = int(input("Which hormat?\n[0] hormat-so (regular hormat)\n[1] hormat-tm-1 (new, uses new talmi moshinsky brackets)\n"))
+if temp == 0:
+    which_hormat = "/hormat-so"
+elif temp == 1:
+    which_hormat = "/hormat-tm-1"
+else:
+    raise ValueError("Wrong hormat entered")
+
+
 # Set up loop parameters and arrays
 start = 0.5
-end = 15.829
+end = 30  # 15.829
 step = 0.5
 
 # Create the values with arange
 s2n = np.arange(start, end, step)
 
 # Ensure the exact end is included
-if s2n[-1] != end:
-    s2n = np.append(s2n, end)
+# if s2n[-1] != end:
+#     s2n = np.append(s2n, end)
 
 int_xsec = np.zeros(len(s2n))
 exit_ecm = np.zeros(len(s2n))
@@ -161,7 +170,7 @@ with open(run_dir+"/hormat/data_hormat", "w") as f:
 
 # Run hormat
 hormat_result = subprocess.run(
-    [script_dir+"/hormat-so"], 
+    [script_dir+which_hormat], 
     input=hormat_in, 
     text=True, 
     capture_output=True,
@@ -267,4 +276,4 @@ end_time = datetime.now()
 elapsed = end_time - start_time
 
 print(f"Total runtime: {elapsed}")
-print(f"Total time twoFNR run: {tfnr_run_times}")
+print(f"Total times twoFNR was run: {tfnr_run_times}")

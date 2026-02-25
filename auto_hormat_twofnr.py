@@ -105,7 +105,13 @@ else:
 
 elab=float(input("Lab energy (MeV)\n"))
 lmax=int(input("Lmax 30 is fine for ~30MeV (max for pChan is 59):\n"))
-
+temp = int(input("Which hormat?\n[0] hormat-so (regular hormat)\n[1] hormat-tm-1 (new, uses new talmi moshinsky brackets)\n"))
+if temp == 0:
+    which_hormat = "/hormat-so"
+elif temp == 1:
+    which_hormat = "/hormat-tm-1"
+else:
+    print("-------------------------\nYou entered the wrong value, start again\n-----------------------")
 
 #--------------------------------------------------------------
 # Set up directories
@@ -180,7 +186,7 @@ for i in range(0,len(names)):
     if i == 0:  # hormat
         # Run hormat
         hormat_result = subprocess.run(
-            [script_dir+"/hormat-so"], 
+            [script_dir+which_hormat], 
             input=hormat_in, 
             text=True, 
             capture_output=True,
@@ -220,9 +226,9 @@ for i in range(0,len(names)):
             cwd=run_dir+"/"+names[i]
         )
         print("Done running pChan")
-        print(pChan_result.returncode)
-        print(pChan_result.stdout)
-        print(pChan_result.stderr)
+        # print(pChan_result.returncode)
+        # print(pChan_result.stdout)
+        # print(pChan_result.stderr)
         shutil.copy(run_dir+"/"+names[i]+"/wfns_proton."+heading, run_dir+"/"+names[i]+"/tfnr/fort.16")
         # Run front
         f21_result = subprocess.run(

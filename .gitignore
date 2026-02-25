@@ -13,6 +13,7 @@ fort.*
 
 # fortran compiled
 hormat-so
+hormat-tm-1
 #front21.out
 #twofnr20.out
 pChan_DOM

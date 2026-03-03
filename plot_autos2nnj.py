@@ -53,6 +53,13 @@ cwd = os.getcwd()  # directory of wherever the user ran the command
 temp=int(input("[0] for 28.53 MeV, [1] for 40 MeV\n"))
 if temp == 0:
     data_dirpath = "/dataTPMLi_28,53MeVold_20260225_120138/"  # temp
+    data_dirpath = "/dataTPMLi28MeV33s2n_20260302_135816/"  # temp
+    data_dirpath = "/trynewh28MeVTPMLi_20260302_164127/"  # temp
+    data_dirpath = "/testnospnohor28E_20260303_185318/"  # temp Li pot these actually are all 40fm by mistake
+    # data_dirpath = "/testnospnohor28EP_20260303_185715/"  # temp Pang pot these actually are all 40fm by mistake
+
+    # data_dirpath = "/testnospnnhor28E_20260303_190126/"  # temp  Li pot new hormat (used to compare 40fm) these actually are all 40fm by mistake
+    # data_dirpath = "/testnospnnhor28EP_20260303_190731/"  # temp  Pang pot new hormat (used to compare 40fm) these actually are all 40fm by mistake
 elif temp ==1:
     data_dirpath = "/dataTPMLi40MeVold_20260225_122037/"  # temp
 int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
@@ -61,6 +68,16 @@ exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
 pnl = read_pnl(cwd+data_dirpath+"pnl.txt")
 if temp == 0:
     data_dirpath = "/dataTPMpang28,53MeVold_20260225_120426/"  # temp
+    data_dirpath = "/dataTPMPang28MeV33s2n_20260302_160934/"  # temp
+    data_dirpath = "/trynewh28MeVTPMPang_20260302_164449/"  # temp
+    data_dirpath = "/dataTPMLi_28,53MeVold_20260225_120138/"  # temp
+    # data_dirpath = "/testnospnnhor28E_20260303_190126/"  # temp  Li pot these actually are all 40fm by mistake
+    # # data_dirpath = "/testnospnnhor28EP_20260303_190731/"  # temp  Pang pot these actually are all 40fm by mistake
+    # data_dirpath = "/test40fm_20260303_181346/"  # temp testing 40fm no spin Li old hormat
+    # data_dirpath = "/test40fmP_20260303_181947/"  # temp testing 40fm no spin Pang old hormat
+    # data_dirpath = "/test40fmLinhor_20260303_182750/"  # temp testing 40fm no spin Li new hormat
+    # data_dirpath = "/test40fmPangnhor_20260303_183214/"  # temp testing 40fm no spin Pang new hormat
+    data_dirpath = "/dataTPMLi28MeV33s2n_20260302_135816/"  # temp testing 40fm no spin Pang new hormat
 elif temp ==1:
     data_dirpath = "/dataTPMPang40MeVold_20260225_122313/"  # temp
 
@@ -69,7 +86,12 @@ s2n2 = read_s2n(cwd+data_dirpath+"s2n.txt")
 exit_ecm2 = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
 
 pnl2 = read_pnl(cwd+data_dirpath+"pnl.txt")
-
+data_dirpath = "/testpchan_20260303_150557/"  # Li pot
+# data_dirpath = "/pchanpang_20260303_154952/"  # Pang pot
+pchan_int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
+pchan_s2n = read_s2n(cwd+data_dirpath+"s2n.txt")
+pchan_exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
+pchan_pnl = read_pnl(cwd+data_dirpath+"pnl.txt")
 
 # print(int_xsec_n_l[("0","0","0")])
 colours = ["#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999"]
@@ -131,7 +153,9 @@ for i in range(6):
     line2, = ax1.plot(s2n, int_xsec_n_l[("1","0",f"{i}")], color=colours[i], linestyle="--", linewidth=3)
 
     # NL (reference → slightly thicker)
-    line3, = ax1.plot(s2n, int_xsec_n_l[("2","0",f"{i}")], color=colours[i], linestyle="-", linewidth=3.5)
+    line3, = ax1.plot(s2n, int_xsec_n_l[("2","0",f"{i}")], color=colours[i], linestyle="-", linewidth=3)
+
+    line_pchan, = ax1.plot(pchan_s2n, pchan_int_xsec_n_l[("2","0",f"{i}")], color="k", linestyle="-", linewidth=3)
 
     # # --- Direct label using NL curve ---
     # y_end = line3.get_ydata()[-1]
@@ -153,7 +177,10 @@ for i in range(6):
     line2, = ax2.plot(s2n2, int_xsec_n_l2[("1","0",f"{i}")], color=colours[i], linestyle="--", linewidth=3)
 
     # NL (reference → slightly thicker)
-    line3, = ax2.plot(s2n2, int_xsec_n_l2[("2","0",f"{i}")], color=colours[i], linestyle="-", linewidth=3.5)
+    line3, = ax2.plot(s2n2, int_xsec_n_l2[("2","0",f"{i}")], color=colours[i], linestyle="-", linewidth=3)
+
+    line_pchan, = ax2.plot(pchan_s2n, pchan_int_xsec_n_l[("2","0",f"{i}")], color="k", linestyle="-", linewidth=3)
+
 
     # # --- Direct label using NL curve ---
     # y_end = line3.get_ydata()[-1]
@@ -170,7 +197,6 @@ for i in range(6):
 # Legend on each axis
 ax1.legend(
     handles=style_handles,
-    title="Locality",
     loc="upper right",
     frameon=False
 )
@@ -264,7 +290,7 @@ for i in range(4):
     line2, = ax1.plot(s2n, int_xsec_n_l[("1",f"{i}",f"0")], color=colours[i], linestyle="--", linewidth=3)
 
     # NL (reference → slightly thicker)
-    line3, = ax1.plot(s2n, int_xsec_n_l[("2",f"{i}",f"0")], color=colours[i], linestyle="-", linewidth=3.5)
+    line3, = ax1.plot(s2n, int_xsec_n_l[("2",f"{i}",f"0")], color=colours[i], linestyle="-", linewidth=3)
 
     # # --- Direct label using NL curve ---
     # y_end = line3.get_ydata()[-1]
@@ -286,7 +312,7 @@ for i in range(4):
     line2, = ax2.plot(s2n2, int_xsec_n_l2[("1",f"{i}",f"0")], color=colours[i], linestyle="--", linewidth=3)
 
     # NL (reference → slightly thicker)
-    line3, = ax2.plot(s2n2, int_xsec_n_l2[("2",f"{i}",f"0")], color=colours[i], linestyle="-", linewidth=3.5)
+    line3, = ax2.plot(s2n2, int_xsec_n_l2[("2",f"{i}",f"0")], color=colours[i], linestyle="-", linewidth=3)
 
     # # --- Direct label using NL curve ---
     # y_end = line3.get_ydata()[-1]
@@ -303,7 +329,6 @@ for i in range(4):
 # Legend on each axis
 ax1.legend(
     handles=style_handles,
-    title="Locality",
     loc="upper right",
     frameon=False
 )
@@ -430,19 +455,124 @@ plt.show()
 
 
 # Plot
-fig, ax = plt.subplots(figsize=(8,6))
-for i in range(0,5):
-    ax.plot(s2n, int_xsec_n_l[("0",f"0",f"{i}")], label=f"LELO n=0 l={i}", c=colours[i], linestyle=":")
+# fig, ax = plt.subplots(figsize=(8,6))
+# for i in range(0,5):
+#     ax.plot(s2n, int_xsec_n_l[("0",f"0",f"{i}")], label=f"LELO n=0 l={i}", c=colours[i], linestyle=":")
 
-    ax.plot(s2n, int_xsec_n_l[("1",f"0",f"{i}")], label=f"LENLO n=0 l={i}", c=colours[i], linestyle="--")
+#     ax.plot(s2n, int_xsec_n_l[("1",f"0",f"{i}")], label=f"LENLO n=0 l={i}", c=colours[i], linestyle="--")
 
-    ax.plot(s2n, int_xsec_n_l[("2",f"0",f"{i}")], label=f"NL n=0 l={i}", c=colours[i], linestyle="-")
+#     ax.plot(s2n, int_xsec_n_l[("2",f"0",f"{i}")], label=f"NL n=0 l={i}", c=colours[i], linestyle="-")
 
-ax.set_xlabel(r"$S_{2n}$ (MeV)", fontsize=16)
-ax.set_ylabel(r"$\sigma_R$ (mb)", fontsize=16)
-ax.legend(fontsize=12)
-ax.grid(alpha=0.2)
+# ax.set_xlabel(r"$S_{2n}$ (MeV)", fontsize=16)
+# ax.set_ylabel(r"$\sigma_R$ (mb)", fontsize=16)
+# ax.legend(fontsize=12)
+# ax.grid(alpha=0.2)
 
+# plt.show()
+
+
+fig, (ax1, ax2) = plt.subplots(
+    1, 2,
+    figsize=(8, 10),
+    sharex=True,
+    sharey=True
+)
+
+for i in range(0,3):
+    # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
+
+    ax1.plot(s2n, int_xsec_n_l[("1",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LENLO/NL n={i} l=0", linestyle="--", linewidth=3)
+
+    ax1.plot(s2n, int_xsec_n_l[("0",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LELO/NL n={i} l=0", linestyle=":", linewidth=3)
+
+    #pchan
+    ax1.plot(s2n, pchan_int_xsec_n_l[("2",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"pChan/NL", linestyle="-", linewidth=3)
+
+    ax2.plot(s2n2, int_xsec_n_l2[("1",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"LENLO/NL n={i} l=0", linestyle="--", linewidth=3)
+
+    ax2.plot(s2n2, int_xsec_n_l2[("0",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"LELO/NL n={i} l=0", linestyle=":", linewidth=3)
+
+    #pchan
+    ax2.plot(s2n2, pchan_int_xsec_n_l[("2",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"pChan/NL", linestyle="-", linewidth=3)
+
+
+# Legend on each axis
+ax1.legend(
+    handles=style_handles,
+    loc="upper right",
+    frameon=False
+)
+# Legend on each axis
+# ax2.legend(
+#     handles=color_handles_n,
+#     loc="upper right",
+#     frameon=False
+# )
+
+ax1.text(
+    0.15, 0.9,                      # x=middle, y=slightly above top
+    "Li",
+    transform=ax1.transAxes,        # <- key line
+    ha="center",
+    va="bottom",
+    fontsize=20,
+)
+
+ax2.text(
+    0.15, 0.9,                      # x=middle, y=slightly above top
+    "Pang",
+    transform=ax2.transAxes,        # <- key line
+    ha="center",
+    va="bottom",
+    fontsize=20,
+)
+
+# Labels only on outer axes (cleaner look)
+ax2.set_xlabel(r"$S_{2n}$ (MeV)")
+ax1.set_ylabel(r"$\sigma_R$ ratio (dimensionless)")
+ax1.set_xlabel(r"$S_{2n}$ (MeV)")
+
+ax1.grid(alpha=0.2)
+ax2.grid(alpha=0.2)
+
+ax1.axhline(y=1.0, c="k", alpha=0.25)
+ax2.axhline(y=1.0, c="k", alpha=0.25)
+
+plt.subplots_adjust(
+    left=0.151,
+    right=0.974,
+    bottom=0.125,
+    top=0.884,
+    hspace=0.037,
+    wspace=0.037
+)
+
+# --- Get main axis limits ---
+s2n_min = np.min(s2n)
+s2n_max = np.max(s2n)
+# --- Triton energy limits ---
+triton_min = np.min(exit_ecm)
+triton_max = np.max(exit_ecm)
+
+for ax in [ax1, ax2]:
+    # --- Create secondary axis on top ---
+    ax_top = ax.secondary_xaxis("top", functions=(forward, inverse))
+    ax_top.set_xlabel("$E_{CoM}$ (MeV)")
+
+    # --- Use MaxNLocator for clean ticks ---
+    ax_top.xaxis.set_major_locator(
+        MaxNLocator(nbins=4, integer=True)
+    )
+
+    # Optional: make ticks point outward for clarity
+    ax_top.tick_params(direction="out")
+
+    # Example vertical line (scaled)
+    ax.axvline(
+        x=inverse(7.8),
+        color='r',
+        linestyle='--'
+    )
 plt.show()
 
 
@@ -499,7 +629,7 @@ for i in range(6):
 
 
 leg1 = ax.legend(handles=color_handles, loc="upper left", frameon=False)
-leg2 = ax.legend(handles=style_handles, title="Locality", loc="upper right", frameon=False)
+leg2 = ax.legend(handles=style_handles, loc="upper right", frameon=False)
 
 ax.add_artist(leg1)
 

@@ -2,6 +2,7 @@ import subprocess, os, re, shutil
 from datetime import datetime
 import numpy as np
 import json
+from datap_template import DATAP_TEMPLATE
 
 
 def make_run_folder(loc_types, nodes, ang_moms, heading: str, base_dir: str = None) -> str:
@@ -18,7 +19,7 @@ def make_run_folder(loc_types, nodes, ang_moms, heading: str, base_dir: str = No
     os.makedirs(run_dir, exist_ok=True)
     os.makedirs(run_dir+"/hormat", exist_ok=True)
     # make all NL/LE dirs
-    type_loc = ["NL", "LENLO", "LELO"]
+    type_loc = ["LELO", "LENLO", "NL"]
     for i in range(pmin, pmax+1):
         # make all NL/LE dirs
         os.makedirs(run_dir+f"/{type_loc[i]}", exist_ok=True)
@@ -75,6 +76,44 @@ def read_int_xsec_n_l(file_path):
     }
     return xsec_data
 
+def run_twofnr(identifier, elab, a, z, n, l, Ex_E, t_pot, script_dir, current_dir):
+    f21_in = (
+        f"{identifier}\n" # set identifier    names are s2n followed by the s2n with a comma
+        f"{identifier}\n" # title information names are s2n followed by the s2n with a comma
+        "8\n1\n"              # which reaction, read p wfns
+        f"0\n{elab}\n"         # calc t wfns, Elab
+        f"{a} {z}\n"            # A, Z targ
+        f"2\n39.9 0.1\n"      # Integration ranges 0 - 19.9fm in 0.1 fm step
+        "2\n30\n"             # number of partial waves
+        "0 0 0\n"             # default angles
+        f"{l} {l}\n{n}\n"     # quantum numbers L and J and nodes
+        f"1\n{Ex_E}\n"     # use s2n, excitation E +s2n
+        f"1\n"                # no nonlocality in p channel
+        "0\n1\n1\n"           # spin in incident, p channel pot (ignore)
+        "1\n"                 # no nonlocality in t channel
+        f"{l}\n1\n{t_pot}\n" # spin in outgoing channel, use Li or Pang potential
+        "1\n1\n"              # D0, zero-range
+        "1.25 0.65\n"         # di-neutron binding potential (radius and diffuseness)
+        "0\n0\n"              # di-neutron spin orbit, di-neutron nonlocality
+    )
+    # Run front
+    f21_result = subprocess.run(
+        [script_dir+"/front21.out"], 
+        input=f21_in, 
+        text=True, 
+        capture_output=True,
+        cwd=current_dir
+    )
+    # run twofnr
+    twofnr20_result = subprocess.run(
+        [script_dir+"/twofnr20.out"], 
+        input=f"tran.{identifier}", 
+        text=True, 
+        capture_output=True,
+        cwd=current_dir
+    )
+    return twofnr20_result
+
 a=92
 z=40
 s2n=15.829
@@ -98,7 +137,7 @@ elif nl_pot==2:  # Perey-Buck potential
     beta = 0.85
 else:
     raise ValueError("Wrong proton potential input")
-
+Vso = -0.000001
 if t_pot == 1:
     tfnr_pot = 2
 elif t_pot == 2:
@@ -106,26 +145,28 @@ elif t_pot == 2:
 else:
     raise ValueError("Wrong triton potential input")
 
-temp = int(input("Which hormat?\n[0] hormat-so (regular hormat)\n[1] hormat-tm-1 (new, uses new talmi moshinsky brackets)\n"))
-if temp == 0:
+decide_hormat = int(input("Which hormat?\n[0] hormat-so (regular hormat)\n[1] hormat-tm-1 (new, uses new talmi moshinsky brackets)\n[2] pChan (no spin-orbit)\n"))
+if decide_hormat == 0:
     which_hormat = "/hormat-so"
-elif temp == 1:
+elif decide_hormat == 1:
     which_hormat = "/hormat-tm-1"
+elif decide_hormat == 2:
+    print("Use pChan")
 else:
     raise ValueError("Wrong hormat entered")
 
 
 # Set up loop parameters and arrays
 start = 0.5
-end = 30  # 15.829
+end = 33.172  # 15.829
 step = 0.5
 
 # Create the values with arange
 s2n = np.arange(start, end, step)
 
 # Ensure the exact end is included
-# if s2n[-1] != end:
-#     s2n = np.append(s2n, end)
+if s2n[-1] != end:
+    s2n = np.append(s2n, end)
 
 int_xsec = np.zeros(len(s2n))
 exit_ecm = np.zeros(len(s2n))
@@ -133,7 +174,7 @@ int_xsec_n_l = {}
 
 type_loc = ["LELO", "LENLO", "NL"]
 
-pmin = 0  # which potential type to calculate
+pmin = 0  # which potential type to calculate 0: LELO, 1: LENLO, 2: NL
 pmax = 2  # which potential type to calculate
 nmin = 0  # min nodes: 0
 nmax = 4  # max nodes: 4
@@ -152,31 +193,58 @@ cwd = os.getcwd()  # directory of wherever the user ran the command
 # create directory to write output
 run_dir, ts, start_time = make_run_folder((pmin,pmax), (nmin, nmax), (lmin, lmax), heading=heading)
 print(f"Creating and writting calculations to:\n{run_dir}\n")
-# hormat input:
-hormat_in = (
-    f"{a}  {z} 1 1\n"  # Targ A, Z, proj A, Z
-    f"{elab}\n"      # Lab energy of proj
-    f"{Vr} {rr} {ar} {rc} {beta}\n"
-    f"{Wv} {rv} {av}  {Wd}  {rd} {ad}\n"
-    f"{Vso}   {rso} {aso}\n"
-    "00 30\n"            # number of partial waves, Lmin, Lmax
-    "  12\n"
-    "  2.508944854380166\n"  # 3.0 default, 2.508944854380166 for 40MeV
-    "     16\n"
-)
-# make file
-with open(run_dir+"/hormat/data_hormat", "w") as f:
-    f.write(hormat_in)
-
-# Run hormat
-hormat_result = subprocess.run(
-    [script_dir+which_hormat], 
-    input=hormat_in, 
-    text=True, 
-    capture_output=True,
-    cwd=run_dir+"/hormat"
-)
-print("Finished running hormat")
+if decide_hormat == 0 or decide_hormat == 1:
+    # hormat input:
+    hormat_in = (
+        f"{a}  {z} 1 1\n"  # Targ A, Z, proj A, Z
+        f"{elab}\n"      # Lab energy of proj
+        f"{Vr} {rr} {ar} {rc} {beta}\n"
+        f"{Wv} {rv} {av}  {Wd}  {rd} {ad}\n"
+        f"{Vso}   {rso} {aso}\n"
+        "00 30\n"            # number of partial waves, Lmin, Lmax
+        "  12\n"
+        "  2.508944854380166\n"  # 3.0 default, 2.508944854380166 for 40MeV
+        "     16\n"
+    )
+    # make file
+    with open(run_dir+"/hormat/data_hormat", "w") as f:
+        f.write(hormat_in)
+    
+    # Run hormat
+    hormat_result = subprocess.run(
+        [script_dir+which_hormat], 
+        input=hormat_in, 
+        text=True, 
+        capture_output=True,
+        cwd=run_dir+"/hormat"
+    )
+    print("Finished running hormat")
+else:
+    # pChan input:
+    pChan_in = (
+        f"1\n1\n{heading}\n"  # Use non-local, use TPM pot, 
+    )
+    # pChan datap input:
+    pChan_dp = DATAP_TEMPLATE.format(
+        a=a,
+        z=z,
+        elab=elab,
+        qval=0.0,
+        nstep=200,
+        lmax=30
+    )
+    # make datap
+    with open(run_dir+"/hormat/datap", "w") as f:
+        f.write(pChan_dp)
+    pChan_result = subprocess.run(
+        [script_dir+"/pChan_DOM"], 
+        input=pChan_in, 
+        text=True, 
+        capture_output=True,
+        cwd=run_dir+"/hormat"
+    )
+    shutil.copy(run_dir+"/hormat/wfns_proton."+heading, run_dir+"/hormat/fort.213")  # To 
+    print("Done running pChan")
 
 
 # loop NL/LE
@@ -195,41 +263,9 @@ for p in range(pmin,pmax+1):                     # loop over NL/LE
             for i in range(0,len(s2n)):  # loop over s2n
                 # make front21 input 
                 identifier = f"s2n_{str(s2n[i]).replace('.', ',')}"
-                f21_in = (
-                    f"{identifier}\n" # set identifier    names are s2n followed by the s2n with a comma
-                    f"{identifier}\n" # title information names are s2n followed by the s2n with a comma
-                    "8\n1\n"              # which reaction, read p wfns
-                    f"0\n{elab}\n"         # calc t wfns, Elab
-                    f"{a} {z}\n"            # A, Z targ
-                    f"2\n19.9 0.1\n"      # Integration ranges 0 - 19.9fm in 0.1 fm step
-                    "2\n30\n"             # number of partial waves
-                    "0 0 0\n"             # default angles
-                    f"{l} {l}\n{n}\n"     # quantum numbers L and J and nodes
-                    f"1\n{s2n[i]}\n"     # use s2n, excitation E +s2n
-                    f"1\n"                # no nonlocality in p channel
-                    "0\n1\n1\n"           # spin in incident, p channel pot (ignore)
-                    "1\n"                 # no nonlocality in t channel
-                    f"{l}\n1\n{tfnr_pot}\n" # spin in outgoing channel, use Li or Pang potential
-                    "1\n1\n"              # D0, zero-range
-                    "1.25 0.65\n"         # di-neutron binding potential (radius and diffuseness)
-                    "0\n0\n"              # di-neutron spin orbit, di-neutron nonlocality
-                )
-                # Run front
-                f21_result = subprocess.run(
-                    [script_dir+"/front21.out"], 
-                    input=f21_in, 
-                    text=True, 
-                    capture_output=True,
-                    cwd=current_dir
-                )
-                # run twofnr
-                twofnr20_result = subprocess.run(
-                    [script_dir+"/twofnr20.out"], 
-                    input=f"tran.{identifier}", 
-                    text=True, 
-                    capture_output=True,
-                    cwd=current_dir
-                )
+
+                twofnr20_result = run_twofnr(identifier, elab, a, z, n, l, s2n[i], tfnr_pot, script_dir, current_dir)
+
                 tfnr_run_times +=1
                 # save twofnr output
                 with open(current_dir+f"/out.{identifier}", "w") as f:
@@ -274,6 +310,9 @@ print(f"s2n array saved to {run_dir+"/s2n.txt"} in JSON format")
 
 end_time = datetime.now()
 elapsed = end_time - start_time
+
+if decide_hormat != 1 or decide_hormat != 0:
+    os.rename(run_dir+"/hormat/", run_dir+"/pChan/")
 
 print(f"Total runtime: {elapsed}")
 print(f"Total times twoFNR was run: {tfnr_run_times}")

@@ -83,7 +83,7 @@ def run_twofnr(identifier, elab, a, z, n, l, Ex_E, t_pot, script_dir, current_di
         "8\n1\n"              # which reaction, read p wfns
         f"0\n{elab}\n"         # calc t wfns, Elab
         f"{a} {z}\n"            # A, Z targ
-        f"2\n39.9 0.1\n"      # Integration ranges 0 - 19.9fm in 0.1 fm step
+        f"2\n19.9 0.1\n"      # Integration ranges 0 - 19.9fm in 0.1 fm step
         "2\n30\n"             # number of partial waves
         "0 0 0\n"             # default angles
         f"{l} {l}\n{n}\n"     # quantum numbers L and J and nodes

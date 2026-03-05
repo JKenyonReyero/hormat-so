@@ -112,7 +112,7 @@ c     open(unit=105,file='smatrix-nmax',status='old',position='append')
 
       need_wfs=.true.
 c     need_wfs=.false.
-      rmax=40.
+      rmax=20.
       drwf=0.1
       nr1=a/drwf
       nr2=rmax/drwf

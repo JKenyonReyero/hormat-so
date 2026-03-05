@@ -55,11 +55,18 @@ if temp == 0:
     data_dirpath = "/dataTPMLi_28,53MeVold_20260225_120138/"  # temp
     data_dirpath = "/dataTPMLi28MeV33s2n_20260302_135816/"  # temp
     data_dirpath = "/trynewh28MeVTPMLi_20260302_164127/"  # temp
-    data_dirpath = "/testnospnohor28E_20260303_185318/"  # temp Li pot these actually are all 40fm by mistake
-    # data_dirpath = "/testnospnohor28EP_20260303_185715/"  # temp Pang pot these actually are all 40fm by mistake
+    data_dirpath = "/testnospnohor28E40fm_20260303_185318/"  # temp Li pot rmax=40fm
+    # data_dirpath = "/testnospnohor28EP40fm_20260303_185715/"  # temp Pang pot rmax=40fm
 
-    # data_dirpath = "/testnospnnhor28E_20260303_190126/"  # temp  Li pot new hormat (used to compare 40fm) these actually are all 40fm by mistake
-    # data_dirpath = "/testnospnnhor28EP_20260303_190731/"  # temp  Pang pot new hormat (used to compare 40fm) these actually are all 40fm by mistake
+    data_dirpath = "/testnospnohor28E_20260304_111456/"  # temp Li pot
+    data_dirpath = "/testnospnohor28EP_20260304_111845/"  # temp Pang pot
+
+
+    # data_dirpath = "/testnospnnhor28E40fm_20260303_190126/"  # temp  Li pot new hormat (used to compare 40fm) rmax=40fm
+    # data_dirpath = "/testnospnnhor28EP40fm_20260303_190731/"  # temp  Pang pot new hormat (used to compare 40fm) rmax=40fm
+
+    data_dirpath = "/testnospnnhor28E_20260304_112216/"  # temp  Li pot new hormat (used to compare 40fm)
+    data_dirpath = "/testnospnnhor28EP_20260304_112614/"  # temp  Pang pot new hormat (used to compare 40fm)
 elif temp ==1:
     data_dirpath = "/dataTPMLi40MeVold_20260225_122037/"  # temp
 int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
@@ -71,13 +78,23 @@ if temp == 0:
     data_dirpath = "/dataTPMPang28MeV33s2n_20260302_160934/"  # temp
     data_dirpath = "/trynewh28MeVTPMPang_20260302_164449/"  # temp
     data_dirpath = "/dataTPMLi_28,53MeVold_20260225_120138/"  # temp
-    # data_dirpath = "/testnospnnhor28E_20260303_190126/"  # temp  Li pot these actually are all 40fm by mistake
-    # # data_dirpath = "/testnospnnhor28EP_20260303_190731/"  # temp  Pang pot these actually are all 40fm by mistake
+    # data_dirpath = "/testnospnnhor28E40fm_20260303_190126/"  # temp  Li pot these actually are all 40fm by mistake
+    # # data_dirpath = "/testnospnnhor28EP40fm_20260303_190731/"  # temp  Pang pot these actually are all 40fm by mistake
     # data_dirpath = "/test40fm_20260303_181346/"  # temp testing 40fm no spin Li old hormat
     # data_dirpath = "/test40fmP_20260303_181947/"  # temp testing 40fm no spin Pang old hormat
     # data_dirpath = "/test40fmLinhor_20260303_182750/"  # temp testing 40fm no spin Li new hormat
     # data_dirpath = "/test40fmPangnhor_20260303_183214/"  # temp testing 40fm no spin Pang new hormat
     data_dirpath = "/dataTPMLi28MeV33s2n_20260302_135816/"  # temp testing 40fm no spin Pang new hormat
+
+    data_dirpath = "/testnospnnhor28E_20260304_112216/"  # temp  Li pot new hormat (used to compare 40fm)
+    # data_dirpath = "/testnospnnhor28EP_20260304_112614/"  # temp  Pang pot new hormat (used to compare 40fm)
+
+    # data_dirpath = "/testnospnohor28E40fm_20260303_185318/"  # temp Li pot rmax=40fm
+    # data_dirpath = "/testnospnohor28EP40fm_20260303_185715/"  # temp Pang pot rmax=40fm
+
+    data_dirpath = "/testnospnnhor28E40fm_20260303_190126/"  # temp  Li pot new hormat (used to compare 40fm) rmax=40fm
+    data_dirpath = "/testnospnnhor28EP40fm_20260303_190731/"  # temp  Pang pot new hormat (used to compare 40fm) rmax=40fm
+
 elif temp ==1:
     data_dirpath = "/dataTPMPang40MeVold_20260225_122313/"  # temp
 
@@ -87,7 +104,7 @@ exit_ecm2 = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
 
 pnl2 = read_pnl(cwd+data_dirpath+"pnl.txt")
 data_dirpath = "/testpchan_20260303_150557/"  # Li pot
-# data_dirpath = "/pchanpang_20260303_154952/"  # Pang pot
+data_dirpath = "/pchanpang_20260303_154952/"  # Pang pot
 pchan_int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
 pchan_s2n = read_s2n(cwd+data_dirpath+"s2n.txt")
 pchan_exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
@@ -539,7 +556,7 @@ ax1.axhline(y=1.0, c="k", alpha=0.25)
 ax2.axhline(y=1.0, c="k", alpha=0.25)
 
 plt.subplots_adjust(
-    left=0.151,
+    left=0.198,
     right=0.974,
     bottom=0.125,
     top=0.884,

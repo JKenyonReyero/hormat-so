@@ -3,6 +3,7 @@ from datetime import datetime
 import numpy as np
 from datap_template import DATAP_TEMPLATE
 from scipy.optimize import minimize_scalar
+from matplotlib import pyplot as plt
 
 
 
@@ -124,7 +125,7 @@ f21_result = subprocess.run(
 
 # make function that returns the 
 def func(ho_rad):
-    hormat_xsec = run_hormat_tfnr(ho_rad)
+    hormat_xsec, _ = run_hormat_tfnr(ho_rad)
     return np.sum((np.log(pChan_xsec) - np.log(hormat_xsec))**2)
 
 def run_hormat_tfnr(ho_rad):
@@ -160,9 +161,36 @@ def run_hormat_tfnr(ho_rad):
         capture_output=True,
         cwd=run_dir+"/hormat/tfnrNL"
     )
+    int_xsec = find_int_xsec(twofnr20_result)
     data = np.loadtxt(run_dir+f"/hormat/tfnrNL/21.{heading}")
     hormat_xsec = data[:,1]
-    return hormat_xsec
+    # print(hormat_xsec)
+    return hormat_xsec, int_xsec
 
-ho_result = minimize_scalar(func, bounds=(2.0, 3.0), method='bounded')
+def find_int_xsec(twofnr20_result):
+    # find integrated xsec and return
+    match = re.search(
+        r"integrated cross section=\s*([0-9.+-Ee]+)",
+        twofnr20_result.stdout
+    )
+    if match:
+        return float(match.group(1))
+    else:
+        print("-----------------------\nNO OUTPUT INTEGRATED XSEC FOUND FROM TWOFNR\n-----------------------")
+        return 0 
+lobound = 2.0
+hibound = 3.0
+step = 0.01
+horad_array = np.arange(lobound, hibound+step, step)
+
+ho_result = minimize_scalar(func, bounds=(lobound, hibound), method='bounded')
 print(f"Optimised harmonic oscilator result is: {ho_result}")
+log_xsec = np.zeros(len(horad_array))
+for i in range(len(horad_array)):
+    log_xsec[i] = func(horad_array[i])
+    print(f"Done {horad_array[i]}")
+
+plt.figure()
+plt.plot(horad_array, log_xsec)
+plt.vlines(ho_result.x, ymin=min(log_xsec), ymax=max(log_xsec))
+plt.show()

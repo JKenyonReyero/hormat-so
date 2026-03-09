@@ -50,7 +50,7 @@ cwd = os.getcwd()  # directory of wherever the user ran the command
 # data_dirpath = str(input("directory path from the current working directory include the / but no .\n"))
 # if data_dirpath[-1] != "/":
 #     data_dirpath = data_dirpath+"/"
-temp=int(input("[0] for 28.53 MeV, [1] for 40 MeV\n"))
+temp=int(input("[0] for 28.53 MeV, [1] for 40 MeV, [2] poster data\n"))
 if temp == 0:
     data_dirpath = "/dataTPMLi_28,53MeVold_20260225_120138/"  # temp
     data_dirpath = "/dataTPMLi28MeV33s2n_20260302_135816/"  # temp
@@ -67,8 +67,13 @@ if temp == 0:
 
     data_dirpath = "/testnospnnhor28E_20260304_112216/"  # temp  Li pot new hormat (used to compare 40fm)
     data_dirpath = "/testnospnnhor28EP_20260304_112614/"  # temp  Pang pot new hormat (used to compare 40fm)
+
+    data_dirpath = "/try2,5horad28MeV_20260306_150837/"  # temp 2.5fm ho rad 28.53 MeV old hormat
 elif temp ==1:
     data_dirpath = "/dataTPMLi40MeVold_20260225_122037/"  # temp
+    data_dirpath = "/try2,5horad40MeV_20260306_152919/"  # temp 2.5 fm ho rad 40 MeV old hormat
+elif temp == 2:
+    data_dirpath = "/posteroldh2,5horad30MeVLi_20260306_160213/"
 int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
 s2n = read_s2n(cwd+data_dirpath+"s2n.txt")
 exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
@@ -95,8 +100,12 @@ if temp == 0:
     data_dirpath = "/testnospnnhor28E40fm_20260303_190126/"  # temp  Li pot new hormat (used to compare 40fm) rmax=40fm
     data_dirpath = "/testnospnnhor28EP40fm_20260303_190731/"  # temp  Pang pot new hormat (used to compare 40fm) rmax=40fm
 
+    data_dirpath = "/try3,0horad28MeV_20260306_151826/"  # temp 2.5 fm ho rad 28.53 MeV old hormat
 elif temp ==1:
     data_dirpath = "/dataTPMPang40MeVold_20260225_122313/"  # temp
+    data_dirpath = "/try3,0horad40MeV_20260306_152513/"  # temp 3.0 fm ho rad 40 MeV old hormat
+elif temp == 2:
+    data_dirpath = "/posteroldh2,5horad40MeVLi_20260306_160524/"
 
 int_xsec_n_l2 = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
 s2n2 = read_s2n(cwd+data_dirpath+"s2n.txt")
@@ -104,7 +113,7 @@ exit_ecm2 = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
 
 pnl2 = read_pnl(cwd+data_dirpath+"pnl.txt")
 data_dirpath = "/testpchan_20260303_150557/"  # Li pot
-data_dirpath = "/pchanpang_20260303_154952/"  # Pang pot
+# data_dirpath = "/pchanpang_20260303_154952/"  # Pang pot
 pchan_int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
 pchan_s2n = read_s2n(cwd+data_dirpath+"s2n.txt")
 pchan_exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
@@ -172,7 +181,8 @@ for i in range(6):
     # NL (reference → slightly thicker)
     line3, = ax1.plot(s2n, int_xsec_n_l[("2","0",f"{i}")], color=colours[i], linestyle="-", linewidth=3)
 
-    line_pchan, = ax1.plot(pchan_s2n, pchan_int_xsec_n_l[("2","0",f"{i}")], color="k", linestyle="-", linewidth=3)
+    if temp != 2:
+        line_pchan, = ax1.plot(pchan_s2n, pchan_int_xsec_n_l[("2","0",f"{i}")], color="k", linestyle="-", linewidth=3)
 
     # # --- Direct label using NL curve ---
     # y_end = line3.get_ydata()[-1]
@@ -196,7 +206,8 @@ for i in range(6):
     # NL (reference → slightly thicker)
     line3, = ax2.plot(s2n2, int_xsec_n_l2[("2","0",f"{i}")], color=colours[i], linestyle="-", linewidth=3)
 
-    line_pchan, = ax2.plot(pchan_s2n, pchan_int_xsec_n_l[("2","0",f"{i}")], color="k", linestyle="-", linewidth=3)
+    if temp != 2:
+        line_pchan, = ax2.plot(pchan_s2n, pchan_int_xsec_n_l[("2","0",f"{i}")], color="k", linestyle="-", linewidth=3)
 
 
     # # --- Direct label using NL curve ---

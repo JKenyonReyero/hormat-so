@@ -137,7 +137,7 @@ elif nl_pot==2:  # Perey-Buck potential
     beta = 0.85
 else:
     raise ValueError("Wrong proton potential input")
-Vso = -0.000001
+# Vso = -0.000001
 if t_pot == 1:
     tfnr_pot = 2
 elif t_pot == 2:
@@ -203,7 +203,7 @@ if decide_hormat == 0 or decide_hormat == 1:
         f"{Vso}   {rso} {aso}\n"
         "00 30\n"            # number of partial waves, Lmin, Lmax
         "  12\n"
-        "  2.508944854380166\n"  # 3.0 default, 2.508944854380166 for 40MeV
+        "  2.5\n"  # 3.0 default, 2.508944854380166 for 40MeV
         "     16\n"
     )
     # make file

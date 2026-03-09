@@ -133,7 +133,7 @@ hormat_in = (
     "-0.00001   1.20 0.45 0.59\n"
     f"00 {lmax}\n"            # number of partial waves, Lmin, Lmax, 00 30
     "  13\n"             # 13
-    "  2.508944854380166\n"   # harmonic oscilator radius 3.0 2.71472------2.68 for 65 MeV 2.508944854380166 40 MeV
+    "  3.0\n"   # harmonic oscilator radius 3.0 2.71472------2.68 for 65 MeV 2.508944854380166 40 MeV
     "     16\n"          # nmax 16
 )
 # make file

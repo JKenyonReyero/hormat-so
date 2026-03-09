@@ -66,7 +66,7 @@ hormat_in = (
     f"{Vso}   {rso} {aso}\n"
     "00 30\n"            # number of partial waves, Lmin, Lmax
     "  12\n"
-    "  3.0  2.71472\n"
+    "  2.5\n"
     "     16\n"
 )
 # make file

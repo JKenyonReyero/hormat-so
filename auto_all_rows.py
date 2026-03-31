@@ -1,6 +1,7 @@
 import subprocess, os, re, shutil
 from datetime import datetime
 import numpy as np
+import json
 
 
 def make_run_folder(heading: str, base_dir: str = None) -> str:
@@ -19,7 +20,29 @@ def make_run_folder(heading: str, base_dir: str = None) -> str:
 
     return run_dir, ts
 
-
+def find_int_xsec(twofnr20_result):
+    # find integrated xsec and return
+    match = re.search(
+        r"integrated cross section=\s*([0-9.+-Ee]+)",
+        twofnr20_result.stdout
+    )
+    if match:
+        return float(match.group(1))
+    else:
+        print("-----------------------\nNO OUTPUT INTEGRATED XSEC FOUND FROM TWOFNR\n-----------------------")
+        return 0 
+    
+def find_exit_ecm(twofnr20_result):
+    match = re.search(
+        r"exit channel\s*.*?\becm=\s*([0-9.+-Ee]+)",
+        twofnr20_result.stdout,
+        re.DOTALL
+    )
+    if match:
+        return float(match.group(1))
+    else:
+        print("-----------------------\nNO EXIT CHANNEL ECM FOUND\n-----------------------")
+        return 0
 
 J = [0,2,4,6,3,0,5,1,3,1,3,2,4,6,8,5,1,7,3,5,3,3,5,5,0,0,2,2,2,4,1,4,0,2,3,2,4,5,2,7,2]
 N = [4,3,2,1,2,4,1,3,2,3,2,3,2,1,0,1,3,0,2,1,2,2,1,1,3,3,2,2,2,1,3,1,3,2,2,2,1,1,2,0,2]
@@ -31,6 +54,13 @@ s2n=15.829
 heading=str(input("Heading file name (max 11 chars)\n"))
 elab=float(input("Lab energy (MeV)\n"))
 nl_pot = int(input("Which Non-local potential?\n[1] Tian Pang Ma potential\n[2] Perey-Buck potential\n"))
+li_or_pang = int(input("[1] Li [2] Pang\n"))
+if li_or_pang == 1:
+    li_or_pang = 2
+elif li_or_pang == 2:
+    li_or_pang = 3
+else:
+    print("---Wrong---")
 if nl_pot==1:  # Tian Pang Ma potential
     Vr, rr, ar = -70.95, 1.29, 0.58
     Wv, rv, av = -9.03,  1.24, 0.50
@@ -45,6 +75,17 @@ elif nl_pot==2:  # Perey-Buck potential
     Vso, rso, aso = -14.35, 1.22, 0.65 # -14.35, 1.22, 0.65
     rc = 1.25                          # Generally 1.25
     beta = 0.85
+
+nl_cor = int(input("Would you like non-local corrections in the triton channel?\n[1] No\n[2] Yes, default 0.20fm\n[3] Yes, I want to specify\n"))
+if nl_cor == 1:
+    nl_range = ""
+elif nl_cor == 2:
+    nl_range = "0.20\n"
+elif nl_cor == 3:
+    nl_range = str(float(input("What non-locality range do you want?")))+"\n"
+    nl_cor = 2
+elif nl_cor < 1 or nl_cor > 3:
+    print("---Wrong nl_cor---")
 
 #--------------------------------------------------------------
 # Set up directories
@@ -81,6 +122,8 @@ hormat_result = subprocess.run(
     cwd=run_dir+"/hormat"
 )
 print("Finished running hormat")
+found_exit_ecm = False
+exit_ecm = []
 
 loc_type = ["LELO","LENLO","NL"]
 for p in range(0,3):
@@ -104,8 +147,8 @@ for p in range(0,3):
             f"1\n{E[i-1]+s2n}\n"     # use s2n, excitation E +s2n
             f"1\n"                # no nonlocality in p channel
             "0\n1\n1\n"           # spin in incident, p channel pot (ignore)
-            "1\n"                 # no nonlocality in t channel
-            f"{J[i-1]}\n1\n2\n"        # spin in outgoing channel, use Li potential
+            f"{nl_cor}\n{nl_range}"                 # no nonlocality in t channel
+            f"{J[i-1]}\n1\n{li_or_pang}\n"        # spin in outgoing channel, use 2:Li potential 3:Pang
             "1\n1\n"              # D0, zero-range
             "1.25 0.65\n"         # di-neutron binding potential (radius and diffuseness)
             "0\n0\n"              # di-neutron spin orbit, di-neutron nonlocality
@@ -120,7 +163,7 @@ for p in range(0,3):
         )
         # run twofnr
         twofnr20_result = subprocess.run(
-            [script_dir+"/twofnr20.out"], 
+            [script_dir+"/twofnr20nlmod.out"], 
             input=f"tran.row_{i}", 
             text=True, 
             capture_output=True,
@@ -131,18 +174,18 @@ for p in range(0,3):
             f.write(twofnr20_result.stdout)
         # save tot xsec to array
 
-        match = re.search(
-            r"integrated cross section=\s*([0-9.+-Ee]+)",
-            twofnr20_result.stdout
-        )
-
-        if match:
-            int_xsec.append(float(match.group(1)))
-        else:
-            int_xsec.append(0)  # or raise an error
-            print("-----------------------\nNO OUTPUT INTEGRATED XSEC FOUND FROM TWOFNR\n-----------------------")
+        int_xsec.append(find_int_xsec(twofnr20_result))
+        if found_exit_ecm == False:
+            exit_ecm.append(find_exit_ecm(twofnr20_result))
+    found_exit_ecm = True
 
     with open(run_dir+f"/{loc_type[p]}/int_xsecs", "w") as f:
         for i in range(1,42):
             f.write(f"{E[i-1]:12.6f} {int_xsec[i-1]:12.6e}\n")
     print(f"Finished running twoFNR for hormat {loc_type[p]}")
+
+with open(run_dir+"/s2n.txt", "w") as f:
+    json.dump((np.array(E)+15.829).tolist(), f)
+
+with open(run_dir+"/exit_ecm.txt", "w") as f:
+    json.dump(exit_ecm, f)

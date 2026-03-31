@@ -76,7 +76,7 @@ def read_int_xsec_n_l(file_path):
     }
     return xsec_data
 
-def run_twofnr(identifier, elab, a, z, n, l, Ex_E, t_pot, script_dir, current_dir):
+def run_twofnr(identifier, elab, a, z, n, l, Ex_E, t_pot, nl_cor, nl_range, script_dir, current_dir):
     f21_in = (
         f"{identifier}\n" # set identifier    names are s2n followed by the s2n with a comma
         f"{identifier}\n" # title information names are s2n followed by the s2n with a comma
@@ -90,7 +90,7 @@ def run_twofnr(identifier, elab, a, z, n, l, Ex_E, t_pot, script_dir, current_di
         f"1\n{Ex_E}\n"     # use s2n, excitation E +s2n
         f"1\n"                # no nonlocality in p channel
         "0\n1\n1\n"           # spin in incident, p channel pot (ignore)
-        "1\n"                 # no nonlocality in t channel
+        f"{nl_cor}\n{nl_range}"                 # no nonlocality in t channel
         f"{l}\n1\n{t_pot}\n" # spin in outgoing channel, use Li or Pang potential
         "1\n1\n"              # D0, zero-range
         "1.25 0.65\n"         # di-neutron binding potential (radius and diffuseness)
@@ -106,7 +106,7 @@ def run_twofnr(identifier, elab, a, z, n, l, Ex_E, t_pot, script_dir, current_di
     )
     # run twofnr
     twofnr20_result = subprocess.run(
-        [script_dir+"/twofnr20.out"], 
+        [script_dir+"/twofnr20nlmod.out"], 
         input=f"tran.{identifier}", 
         text=True, 
         capture_output=True,
@@ -145,6 +145,17 @@ elif t_pot == 2:
 else:
     raise ValueError("Wrong triton potential input")
 
+nl_cor = int(input("Would you like non-local corrections in the triton channel?\n[1] No\n[2] Yes, default 0.20fm\n[3] Yes, I want to specify\n"))
+if nl_cor == 1:
+    nl_range = ""
+elif nl_cor == 2:
+    nl_range = "0.20\n"
+elif nl_cor == 3:
+    nl_range = str(float(input("What non-locality range do you want?")))+"\n"
+    nl_cor = 2
+elif nl_cor < 1 or nl_cor > 3:
+    print("---Wrong nl_cor---")
+
 decide_hormat = int(input("Which hormat?\n[0] hormat-so (regular hormat)\n[1] hormat-tm-1 (new, uses new talmi moshinsky brackets)\n[2] pChan (no spin-orbit)\n"))
 if decide_hormat == 0:
     which_hormat = "/hormat-so"
@@ -157,8 +168,8 @@ else:
 
 
 # Set up loop parameters and arrays
-start = 0.5
-end = 33.172  # 15.829
+start = 0.5  # 0.5
+end = 33.172  # 15.829 for ground state or 33.172 for highest excited state
 step = 0.5
 
 # Create the values with arange
@@ -264,7 +275,7 @@ for p in range(pmin,pmax+1):                     # loop over NL/LE
                 # make front21 input 
                 identifier = f"s2n_{str(s2n[i]).replace('.', ',')}"
 
-                twofnr20_result = run_twofnr(identifier, elab, a, z, n, l, s2n[i], tfnr_pot, script_dir, current_dir)
+                twofnr20_result = run_twofnr(identifier, elab, a, z, n, l, s2n[i], tfnr_pot, nl_cor, nl_range, script_dir, current_dir)
 
                 tfnr_run_times +=1
                 # save twofnr output

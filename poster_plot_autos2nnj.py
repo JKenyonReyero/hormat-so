@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
 from matplotlib.ticker import MaxNLocator
+from scipy.interpolate import interp1d
+from matplotlib.ticker import MultipleLocator
+
 
 
 def read_int_xsec_n_l(file_path):
@@ -28,33 +31,10 @@ def read_pnl(file_path):
         arr = json.load(f)
     return arr
 
-def forward(x):
-    # Map S2n → Triton energy (descending)
-    return triton_max - (
-        (x - s2n_min) / (s2n_max - s2n_min)
-    ) * (triton_max - triton_min)
-
-def inverse(E):
-    # Map Triton energy → S2n
-    return s2n_min + (
-        (triton_max - E) / (triton_max - triton_min)
-    ) * (s2n_max - s2n_min)
-
-def forward2(x):
-    # Map S2n → Triton energy (descending)
-    return triton_max2 - (
-        (x - s2n_min2) / (s2n_max2 - s2n_min2)
-    ) * (triton_max2 - triton_min2)
-
-def inverse2(E):
-    # Map Triton energy → S2n
-    return s2n_min2 + (
-        (triton_max2 - E) / (triton_max2 - triton_min2)
-    ) * (s2n_max2 - s2n_min2)
-
 #--------------------------------------------------------------
 # Set up directories
 #--------------------------------------------------------------
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 cwd = os.getcwd()  # directory of wherever the user ran the command
@@ -63,11 +43,14 @@ cwd = os.getcwd()  # directory of wherever the user ran the command
 # if data_dirpath[-1] != "/":
 #     data_dirpath = data_dirpath+"/"
 data_dirpath = "/posteroldh2,5horad30MeVLi_20260306_160213/"
+data_dirpath = "/nonlcorpang30_20260320_171055/"
 int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
 s2n = read_s2n(cwd+data_dirpath+"s2n.txt")
 exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
 pnl = read_pnl(cwd+data_dirpath+"pnl.txt")
 data_dirpath = "/posteroldh2,5horad40MeVLi_20260306_160524/"
+data_dirpath = "/nlcorallnlli30_20260320_165324/"
+data_dirpath = "/nlcorallnlpang30_20260320_165941/"
 
 int_xsec_n_l2 = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.npz")
 s2n2 = read_s2n(cwd+data_dirpath+"s2n.txt")
@@ -80,6 +63,31 @@ pchan_int_xsec_n_l = read_int_xsec_n_l(cwd+data_dirpath+"integrated_xsecs_n_l.np
 pchan_s2n = read_s2n(cwd+data_dirpath+"s2n.txt")
 pchan_exit_ecm = read_s2n(cwd+data_dirpath+"exit_ecm.txt")
 pchan_pnl = read_pnl(cwd+data_dirpath+"pnl.txt")
+
+# Create interpolation functions
+# 'fill_value="extrapolate"' allows zooming outside original x range
+exit_ecm_of_s2n = interp1d(s2n, exit_ecm, kind='linear', fill_value="extrapolate")
+s2n_of_exit_ecm = interp1d(exit_ecm, s2n, kind='linear', fill_value="extrapolate")
+
+# Create a secondary x-axis on top
+def forward(s2nval):
+    return exit_ecm_of_s2n(s2nval)
+
+def inverse(ecmval):
+    return s2n_of_exit_ecm(ecmval)
+
+# Create interpolation functions
+# 'fill_value="extrapolate"' allows zooming outside original x range
+exit_ecm_of_s2n2 = interp1d(s2n2, exit_ecm2, kind='linear', fill_value="extrapolate")
+s2n_of_exit_ecm2 = interp1d(exit_ecm2, s2n2, kind='linear', fill_value="extrapolate")
+
+# Create a secondary x-axis on top
+def forward2(s2nval):
+    return exit_ecm_of_s2n2(s2nval)
+
+def inverse2(ecmval):
+    return s2n_of_exit_ecm2(ecmval)
+
 
 # print(int_xsec_n_l[("0","0","0")])
 colours = ["#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999"]
@@ -246,7 +254,7 @@ triton_max = np.max(exit_ecm)
 
 # --- Create secondary axis on top ---
 ax_top = ax1.secondary_xaxis("top", functions=(forward, inverse))
-ax_top.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top.set_xlabel("$E_t$ (MeV)", labelpad=12)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top.xaxis.set_major_locator(
@@ -272,7 +280,7 @@ triton_max2 = np.max(exit_ecm2)
 
 # --- Create secondary axis on top ---
 ax_top2 = ax2.secondary_xaxis("top", functions=(forward2, inverse2))
-ax_top2.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top2.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top2.xaxis.set_major_locator(
@@ -405,7 +413,7 @@ triton_max = np.max(exit_ecm)
 
 # --- Create secondary axis on top ---
 ax_top = ax1.secondary_xaxis("top", functions=(forward, inverse))
-ax_top.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top.xaxis.set_major_locator(
@@ -431,7 +439,7 @@ triton_max2 = np.max(exit_ecm2)
 
 # --- Create secondary axis on top ---
 ax_top2 = ax2.secondary_xaxis("top", functions=(forward2, inverse2))
-ax_top2.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top2.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top2.xaxis.set_major_locator(
@@ -508,7 +516,7 @@ ax2.text(
 
 # Labels only on outer axes (cleaner look)
 ax2.set_xlabel(r"$S_{2n}$ (MeV)")
-ax1.set_ylabel(r"$\sigma_R$ ratio")
+ax1.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$")
 ax1.set_xlabel(r"$S_{2n}$ (MeV)")
 
 ax1.grid(alpha=0.2)
@@ -526,16 +534,9 @@ plt.subplots_adjust(
     wspace=0.037
 )
 
-# --- Get main axis limits ---
-s2n_min = np.min(s2n)
-s2n_max = np.max(s2n)
-# --- Triton energy limits ---
-triton_min = np.min(exit_ecm)
-triton_max = np.max(exit_ecm)
-
 # --- Create secondary axis on top ---
 ax_top = ax1.secondary_xaxis("top", functions=(forward, inverse))
-ax_top.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top.xaxis.set_major_locator(
@@ -552,16 +553,9 @@ ax1.axvline(
     linestyle='--'
 )
 
-# --- Get main axis limits ---
-s2n_min2 = np.min(s2n2)
-s2n_max2 = np.max(s2n2)
-# --- Triton energy limits ---
-triton_min2 = np.min(exit_ecm2)
-triton_max2 = np.max(exit_ecm2)
-
 # --- Create secondary axis on top ---
 ax_top2 = ax2.secondary_xaxis("top", functions=(forward2, inverse2))
-ax_top2.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top2.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top2.xaxis.set_major_locator(
@@ -581,6 +575,71 @@ ax_top2.tick_params(direction="out")
 fig.savefig("poster_n_diff.pdf", pad_inches=0.02, transparent=True)
 fig.savefig("poster_n_diff.svg", pad_inches=0.02, transparent=True)
 plt.show()
+
+
+
+# fig, ax = plt.subplots(figsize=(8,6))
+# for i in range(0,3):
+#     # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
+
+#     ax.plot(s2n, int_xsec_n_l[("1",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LENLO/NL n={i} l=0", linestyle="--")
+
+#     ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LELO/NL n={i} l=0", linestyle=":")
+
+# ax.axhline(y=1,c="k",alpha=0.2,linewidth=2)
+# ax.set_xlabel(r"$S_{2n}$ (MeV)", fontsize=16)
+# ax.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$", fontsize=16)
+# ax.legend(fontsize=12)
+# ax.grid(alpha=0.2)
+
+# plt.show()
+
+
+# fig, ax = plt.subplots(figsize=(8,6))
+# for i in range(0,6):
+#     # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
+
+#     ax.plot(s2n, int_xsec_n_l[("1","0",f"{i}")]/int_xsec_n_l[("2","0",f"{i}")], label=f"LENLO/NL n=0 l={i}", linestyle="--")
+
+#     ax.plot(s2n, int_xsec_n_l[("0","0",f"{i}")]/int_xsec_n_l[("2","0",f"{i}")], label=f"LELO/NL n=0 l={i}", linestyle=":")
+
+# ax.axhline(y=1,c="k",alpha=0.2,linewidth=2)
+# ax.set_xlabel(r"$S_{2n}$ (MeV)", fontsize=16)
+# ax.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$ (dimensionless)", fontsize=16)
+# ax.legend(fontsize=12)
+# ax.grid(alpha=0.2)
+
+# plt.show()
+
+
+# plt.rcParams.update({
+#     "font.size": 30,
+#     "axes.labelsize": 38,
+#     "xtick.labelsize": 28,
+#     "ytick.labelsize": 28,
+#     "legend.fontsize": 18,
+# })
+# fig, ax = plt.subplots(figsize=(12,8))
+
+# for i in range(6):
+#     ax.plot(s2n, int_xsec_n_l[("0","0",f"{i}")],
+#             color=colours[i], linestyle=":", linewidth=3.5)
+#     ax.plot(s2n, int_xsec_n_l[("1","0",f"{i}")],
+#             color=colours[i], linestyle="--", linewidth=3.5)
+#     ax.plot(s2n, int_xsec_n_l[("2","0",f"{i}")],
+#             color=colours[i], linestyle="-", linewidth=3.5)
+
+
+# leg1 = ax.legend(handles=color_handles, loc="upper left", frameon=False)
+# leg2 = ax.legend(handles=style_handles, loc="upper right", frameon=False)
+
+# ax.add_artist(leg1)
+
+# ax.set_xlabel(r"$S_{2n}$ (MeV)")
+# ax.set_ylabel(r"$\sigma_R$ (mb)")
+# ax.grid(alpha=0.2)
+
+# plt.show()
 
 fig, (ax1, ax2) = plt.subplots(
     1, 2,
@@ -640,11 +699,11 @@ ax2.text(
 
 # Labels only on outer axes (cleaner look)
 ax2.set_xlabel(r"$S_{2n}$ (MeV)")
-ax1.set_ylabel(r"$\sigma_R$ ratio")
+ax1.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$")
 ax1.set_xlabel(r"$S_{2n}$ (MeV)")
 
 # ax2.set_xlabel(r"$E_{Ex}$ (MeV)")
-# ax1.set_ylabel(r"$\sigma_R$ ratio")
+# ax1.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$")
 # ax1.set_xlabel(r"$E_{Ex}$ (MeV)")
 
 ax1.grid(alpha=0.2)
@@ -662,16 +721,10 @@ plt.subplots_adjust(
     wspace=0.037
 )
 
-# --- Get main axis limits ---
-s2n_min = np.min(s2n)
-s2n_max = np.max(s2n)
-# --- Triton energy limits ---
-triton_min = np.min(exit_ecm)
-triton_max = np.max(exit_ecm)
 
 # --- Create secondary axis on top ---
 ax_top = ax1.secondary_xaxis("top", functions=(forward, inverse))
-ax_top.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top.xaxis.set_major_locator(
@@ -688,16 +741,9 @@ ax1.axvline(
     linestyle='--'
 )
 
-# --- Get main axis limits ---
-s2n_min2 = np.min(s2n2)
-s2n_max2 = np.max(s2n2)
-# --- Triton energy limits ---
-triton_min2 = np.min(exit_ecm2)
-triton_max2 = np.max(exit_ecm2)
-
 # --- Create secondary axis on top ---
 ax_top2 = ax2.secondary_xaxis("top", functions=(forward2, inverse2))
-ax_top2.set_xlabel("$E_{CoM}$ (MeV)")
+ax_top2.set_xlabel("$E_t$ (MeV)", labelpad=15)
 
 # --- Use MaxNLocator for clean ticks ---
 ax_top2.xaxis.set_major_locator(
@@ -725,65 +771,282 @@ fig.savefig("poster_l_diff.svg", pad_inches=0.02, transparent=True)
 
 plt.show()
 
-# fig, ax = plt.subplots(figsize=(8,6))
-# for i in range(0,3):
-#     # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
-
-#     ax.plot(s2n, int_xsec_n_l[("1",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LENLO/NL n={i} l=0", linestyle="--")
-
-#     ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LELO/NL n={i} l=0", linestyle=":")
-
-# ax.axhline(y=1,c="k",alpha=0.2,linewidth=2)
-# ax.set_xlabel(r"$S_{2n}$ (MeV)", fontsize=16)
-# ax.set_ylabel(r"$\sigma_R$ ratio (dimensionless)", fontsize=16)
-# ax.legend(fontsize=12)
-# ax.grid(alpha=0.2)
-
-# plt.show()
 
 
-# fig, ax = plt.subplots(figsize=(8,6))
-# for i in range(0,6):
-#     # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
 
-#     ax.plot(s2n, int_xsec_n_l[("1","0",f"{i}")]/int_xsec_n_l[("2","0",f"{i}")], label=f"LENLO/NL n=0 l={i}", linestyle="--")
+# Create interpolation functions
+# 'fill_value="extrapolate"' allows zooming outside original x range
+exit_ecm_of_s2n = interp1d(s2n-15.829, exit_ecm, kind='linear', fill_value="extrapolate")
+s2n_of_exit_ecm = interp1d(exit_ecm, s2n-15.829, kind='linear', fill_value="extrapolate")
 
-#     ax.plot(s2n, int_xsec_n_l[("0","0",f"{i}")]/int_xsec_n_l[("2","0",f"{i}")], label=f"LELO/NL n=0 l={i}", linestyle=":")
-
-# ax.axhline(y=1,c="k",alpha=0.2,linewidth=2)
-# ax.set_xlabel(r"$S_{2n}$ (MeV)", fontsize=16)
-# ax.set_ylabel(r"$\sigma_R$ ratio (dimensionless)", fontsize=16)
-# ax.legend(fontsize=12)
-# ax.grid(alpha=0.2)
-
-# plt.show()
+# Create interpolation functions
+# 'fill_value="extrapolate"' allows zooming outside original x range
+exit_ecm_of_s2n2 = interp1d(s2n2-15.829, exit_ecm2, kind='linear', fill_value="extrapolate")
+s2n_of_exit_ecm2 = interp1d(exit_ecm2, s2n2-15.829, kind='linear', fill_value="extrapolate")
 
 
-plt.rcParams.update({
-    "font.size": 30,
-    "axes.labelsize": 38,
-    "xtick.labelsize": 28,
-    "ytick.labelsize": 28,
-    "legend.fontsize": 18,
-})
-fig, ax = plt.subplots(figsize=(12,8))
+fig, (ax1, ax2) = plt.subplots(
+    1, 2,
+    figsize=(9, 10),
+    sharex=False,
+    sharey=True
+)
 
-for i in range(6):
-    ax.plot(s2n, int_xsec_n_l[("0","0",f"{i}")],
-            color=colours[i], linestyle=":", linewidth=3.5)
-    ax.plot(s2n, int_xsec_n_l[("1","0",f"{i}")],
-            color=colours[i], linestyle="--", linewidth=3.5)
-    ax.plot(s2n, int_xsec_n_l[("2","0",f"{i}")],
-            color=colours[i], linestyle="-", linewidth=3.5)
+for i in range(0,4):
+    # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
+
+    ax1.plot(s2n-15.829, int_xsec_n_l[("1",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LENLO/NL n={i} l=0", linestyle="--", linewidth=3, color=colours[i])
+
+    ax1.plot(s2n-15.829, int_xsec_n_l[("0",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"LELO/NL n={i} l=0", linestyle=":", linewidth=3, color=colours[i])
+
+    #pchan
+    # ax1.plot(s2n, pchan_int_xsec_n_l[("2",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"pChan/NL", linestyle="-", linewidth=3)
+
+    ax2.plot(s2n2-15.829, int_xsec_n_l2[("1",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"LENLO/NL n={i} l=0", linestyle="--", linewidth=3, color=colours[i])
+
+    ax2.plot(s2n2-15.829, int_xsec_n_l2[("0",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"LELO/NL n={i} l=0", linestyle=":", linewidth=3, color=colours[i])
+
+    #pchan
+    # ax2.plot(s2n2, pchan_int_xsec_n_l[("2",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"pChan/NL", linestyle="-", linewidth=3)
 
 
-leg1 = ax.legend(handles=color_handles, loc="upper left", frameon=False)
-leg2 = ax.legend(handles=style_handles, loc="upper right", frameon=False)
+# Legend on each axis
+ax1.legend(
+    handles=style_handles_diff,
+    loc="upper right",
+    frameon=False
+)
+# Legend on each axis
+ax2.legend(
+    handles=color_handles_n,
+    loc="upper right",
+    frameon=False
+)
 
-ax.add_artist(leg1)
+ax1.text(
+    0.25, 0.9,                      # x=middle, y=slightly above top
+    "30MeV",
+    transform=ax1.transAxes,        # <- key line
+    ha="center",
+    va="bottom",
+    fontsize=20,
+)
 
-ax.set_xlabel(r"$S_{2n}$ (MeV)")
-ax.set_ylabel(r"$\sigma_R$ (mb)")
-ax.grid(alpha=0.2)
+ax2.text(
+    0.25, 0.9,                      # x=middle, y=slightly above top
+    "40MeV",
+    transform=ax2.transAxes,        # <- key line
+    ha="center",
+    va="bottom",
+    fontsize=20,
+)
+
+# Labels only on outer axes (cleaner look)
+ax2.set_xlabel(r"$E_{ex}$ (MeV)")
+ax1.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$")
+ax1.set_xlabel(r"$E_{ex}$ (MeV)")
+
+ax1.grid(alpha=0.2)
+ax2.grid(alpha=0.2)
+
+ax1.axhline(y=1.0, c="k", alpha=0.25)
+ax2.axhline(y=1.0, c="k", alpha=0.25)
+
+plt.subplots_adjust(
+    left=0.207,
+    right=0.974,
+    bottom=0.125,
+    top=0.884,
+    hspace=0.037,
+    wspace=0.037
+)
+
+# --- Create secondary axis on top ---
+ax_top = ax1.secondary_xaxis("top", functions=(forward, inverse))
+ax_top.set_xlabel("$E_t$ (MeV)", labelpad=15)
+
+# --- Use MaxNLocator for clean ticks ---
+ax_top.xaxis.set_major_locator(
+    MaxNLocator(nbins=4, integer=True)
+)
+
+# Optional: make ticks point outward for clarity
+ax_top.tick_params(direction="out")
+
+# Example vertical line (scaled)
+ax1.axvline(
+    x=inverse(7.8),
+    color='r',
+    linestyle='--'
+)
+
+# --- Create secondary axis on top ---
+ax_top2 = ax2.secondary_xaxis("top", functions=(forward2, inverse2))
+ax_top2.set_xlabel("$E_t$ (MeV)", labelpad=15)
+
+# --- Use MaxNLocator for clean ticks ---
+ax_top2.xaxis.set_major_locator(
+    MaxNLocator(nbins=4, integer=True)
+)
+
+# Optional: make ticks point outward for clarity
+ax_top2.tick_params(direction="out")
+
+# Example vertical line (scaled)
+# ax2.axvline(
+#     x=inverse2(7.8),
+#     color='r',
+#     linestyle='--'
+# )
+ax1.set_xlim(xmin=-0.1, xmax=max(s2n)-15.829)
+ax2.set_xlim(xmin=-0.1, xmax=max(s2n)-15.829)
+ax1.set_ylim(ymin=0.95, ymax=1.15)
+
+ax1.xaxis.set_major_locator(MultipleLocator(5))
+ax2.xaxis.set_major_locator(MultipleLocator(5))
+ax_top.xaxis.set_major_locator(MultipleLocator(5))
+ax_top2.xaxis.set_major_locator(MultipleLocator(5))
+
+fig.savefig("poster_n_diff_Eex.pdf", pad_inches=0.02, transparent=True)
+fig.savefig("poster_n_diff_Eex.svg", pad_inches=0.02, transparent=True)
+plt.show()
+
+
+fig, (ax1, ax2) = plt.subplots(
+    1, 2,
+    figsize=(9, 10),
+    sharex=False,
+    sharey=True
+)
+
+for i in range(0,4):
+    # ax.plot(s2n, int_xsec_n_l[("0",f"{i}","0")], label=f"NL n{i} l0")
+
+    ax1.plot(s2n-15.829, int_xsec_n_l[("1","0",f"{i}")]/int_xsec_n_l[("2","0",f"{i}")], label=f"LENLO/NL n=0 l={i}", linestyle="--", linewidth=3, color=colours[i])
+
+    ax1.plot(s2n-15.829, int_xsec_n_l[("0","0",f"{i}")]/int_xsec_n_l[("2","0",f"{i}")], label=f"LELO/NL n=0 l={i}", linestyle=":", linewidth=3, color=colours[i])
+
+    #pchan
+    # ax1.plot(s2n, pchan_int_xsec_n_l[("2",f"{i}","0")]/int_xsec_n_l[("2",f"{i}","0")], label=f"pChan/NL", linestyle="-", linewidth=3)
+
+    ax2.plot(s2n2-15.829, int_xsec_n_l2[("1","0",f"{i}")]/int_xsec_n_l2[("2","0",f"{i}")], label=f"LENLO/NL n=0 l={i}", linestyle="--", linewidth=3, color=colours[i])
+
+    ax2.plot(s2n2-15.829, int_xsec_n_l2[("0","0",f"{i}")]/int_xsec_n_l2[("2","0",f"{i}")], label=f"LELO/NL n=0 l={i}", linestyle=":", linewidth=3, color=colours[i])
+
+    #pchan
+    # ax2.plot(s2n2, pchan_int_xsec_n_l[("2",f"{i}","0")]/int_xsec_n_l2[("2",f"{i}","0")], label=f"pChan/NL", linestyle="-", linewidth=3)
+
+
+# Legend on each axis
+ax1.legend(
+    handles=style_handles_diff,
+    loc="upper right",
+    frameon=False
+)
+# Legend on each axis
+ax2.legend(
+    handles=color_handles,
+    loc="upper right",
+    frameon=False
+)
+
+ax1.text(
+    0.25, 0.9,                      # x=middle, y=slightly above top
+    "30MeV",
+    transform=ax1.transAxes,        # <- key line
+    ha="center",
+    va="bottom",
+    fontsize=20,
+)
+
+ax2.text(
+    0.25, 0.9,                      # x=middle, y=slightly above top
+    "40MeV",
+    transform=ax2.transAxes,        # <- key line
+    ha="center",
+    va="bottom",
+    fontsize=20,
+)
+
+# Labels only on outer axes (cleaner look)
+ax2.set_xlabel(r"$E_{ex}$ (MeV)")
+ax1.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$")
+ax1.set_xlabel(r"$E_{ex}$ (MeV)")
+
+# ax2.set_xlabel(r"$E_{Ex}$ (MeV)")
+# ax1.set_ylabel(r"$\sigma_{LE}/\sigma_{NL}$")
+# ax1.set_xlabel(r"$E_{Ex}$ (MeV)")
+
+ax1.grid(alpha=0.2)
+ax2.grid(alpha=0.2)
+
+ax1.axhline(y=1.0, c="k", alpha=0.25)
+ax2.axhline(y=1.0, c="k", alpha=0.25)
+
+plt.subplots_adjust(
+    left=0.207,
+    right=0.974,
+    bottom=0.125,
+    top=0.884,
+    hspace=0.037,
+    wspace=0.037
+)
+
+
+# --- Create secondary axis on top ---
+ax_top = ax1.secondary_xaxis("top", functions=(forward, inverse))
+ax_top.set_xlabel("$E_t$ (MeV)", labelpad=15)
+
+# --- Use MaxNLocator for clean ticks ---
+ax_top.xaxis.set_major_locator(
+    MaxNLocator(nbins=4, integer=True)
+)
+
+# Optional: make ticks point outward for clarity
+ax_top.tick_params(direction="out")
+
+# Example vertical line (scaled)
+ax1.axvline(
+    x=inverse(7.8),
+    color='r',
+    linestyle='--'
+)
+
+# --- Create secondary axis on top ---
+ax_top2 = ax2.secondary_xaxis("top", functions=(forward2, inverse2))
+ax_top2.set_xlabel("$E_t$ (MeV)", labelpad=15)
+
+# --- Use MaxNLocator for clean ticks ---
+# ax_top2.xaxis.set_major_locator(
+#     MaxNLocator(nbins=4, integer=True)
+# )
+
+# Optional: make ticks point outward for clarity
+ax_top2.tick_params(direction="out")
+
+# Example vertical line (scaled)
+# ax2.axvline(
+#     x=inverse2(7.8),
+#     color='r',
+#     linestyle='--'
+# )
+
+
+# ax1.set_xlim([0, max(s2n)-15.829])
+# ax2.set_xlim([0, max(s2n)-15.829])
+
+# ax1.set_ylim([0.90, 1.15])
+ax1.set_xlim(xmin=-0.1, xmax=max(s2n)-15.829)
+ax2.set_xlim(xmin=-0.1, xmax=max(s2n)-15.829)
+ax1.set_ylim(ymin=0.95, ymax=1.15)
+
+ax1.xaxis.set_major_locator(MultipleLocator(5))
+ax2.xaxis.set_major_locator(MultipleLocator(5))
+ax_top.xaxis.set_major_locator(MultipleLocator(5))
+ax_top2.xaxis.set_major_locator(MultipleLocator(5))
+
+
+fig.savefig("poster_l_diff_Eex.pdf", pad_inches=0.02, transparent=True)
+fig.savefig("poster_l_diff_Eex.svg", pad_inches=0.02, transparent=True)
 
 plt.show()

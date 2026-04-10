@@ -282,15 +282,15 @@ data_dirpath_pang30 = "/poster_spin_distPang30MeV_20260317_121914/"
 data_dirpath_li40 = "/poster_spin_distLi40MeV_20260317_122009/"
 data_dirpath_pang40 = "/poster_spin_distPang40MeV_20260317_122054/"
 
-data_dirpath_li30 = "/poster_spin_distLi30MeV_20260317_121643/"
-data_dirpath_pang30 = "/poster_spin_distPang30MeV_20260317_121914/"
-data_dirpath_li40 = "/nlcorli30_20260320_161228/"
-data_dirpath_pang40 = "/nlcorpang30_20260320_161815/"
+# data_dirpath_li30 = "/poster_spin_distLi30MeV_20260317_121643/"
+# data_dirpath_pang30 = "/poster_spin_distPang30MeV_20260317_121914/"
+# data_dirpath_li40 = "/nlcorli30_20260320_161228/"
+# data_dirpath_pang40 = "/nlcorpang30_20260320_161815/"
 
-data_dirpath_li30 = "/poster_spin_distLi40MeV_20260317_122009/"
-data_dirpath_pang30 = "/poster_spin_distPang40MeV_20260317_122054/"
-data_dirpath_li40 = "/nlcorli40_20260320_162833/"
-data_dirpath_pang40 = "/nlcorpang40_20260320_162903/"
+# data_dirpath_li30 = "/poster_spin_distLi40MeV_20260317_122009/"
+# data_dirpath_pang30 = "/poster_spin_distPang40MeV_20260317_122054/"
+# data_dirpath_li40 = "/nlcorli40_20260320_162833/"
+# data_dirpath_pang40 = "/nlcorpang40_20260320_162903/"
 
 E_ex_li30, (f_NL_li30, total_NL_li30), (f_LENLO_li30, total_LENLO_li30), (f_LELO_li30, total_LELO_li30) = read_spread(cwd+data_dirpath_li30, E_grid)
 

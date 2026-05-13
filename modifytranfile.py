@@ -1,4 +1,6 @@
 import re
+from tran_template import TRAN_TEMPLATE, TFOLD_SO_TEMPLATE
+
 
 def search_tran_file(tran_string, search_string):
     """
@@ -32,22 +34,24 @@ def split_by_form_foot_start(last_pot_foot):
     return parts
 
 
-filename = "tran.testKDtli"
+tran_file = "tran.testKDtli"
+tfold_re_file = "tfold_relo.dat"
+tfold_im_file = "tfold_imlo.dat"
+which_channel_tfold = "ex"  # "en" or "ex"
 read_pots = 0
-pots_dict = {"pot_1":None,
-             "pot_2":None,
-             "pot_3":None,
-             "pot_4":None,
-             "pot_5":None,
-             "pot_6":None,
+pots_dict = {"pot_1":"",
+             "pot_2":"",
+             "pot_3":"",
+             "pot_4":"",
+             "pot_5":"",
+             "pot_6":"",
              }
+headinfo = {}
 
-
-with open(filename, "r") as file:
+with open(tran_file, "r") as file:
     tran_string = file.read()
 
 
-no_header = tran_string[:]
 
 # Counting the number of (5e14.7) in the tran file to double check it lines up with the previous number of read in files
 count_form = tran_string.count("(5e14.7)")
@@ -59,7 +63,7 @@ if count_form == 0:
           -------------------""")
     
 if count_form >= 1 and count_form < 7:
-    sections = split_by_form(no_header) # section[0] is header, then some potentials then the potential with footer
+    sections = split_by_form(tran_string) # section[0] is header, then some potentials then the potential with footer
     # print(sections[1:])
     header = sections[0]
     last_pot, footer = split_by_form_foot_start(sections[-1])
@@ -74,177 +78,189 @@ if count_form >= 1 and count_form < 7:
     # print(pots_dict)
     # I now have: header, the potentials in order and the footer.
 
-
-
-with open(filename, "r") as file:
-    for i, line in enumerate(file):
-        print(line)
-        if i >= 14:
-            break
-        fields = line.split()
-        # look for entrance channels
+split_header = header.split("\n")
+print(split_header)
+for i in range(0,len(split_header)):  # iterate over each line in the split header
+    if (5 <= i <= 7):
+        fields = split_header[i].split()
+        # look for entrance channel potentials
         if fields[0] == "5.1000":
-            enVD = fields[1]     #! V   ; Real well depth of the optical potential.
-            enWD = fields[2]     #! W   ; Imaginary well depth.
-            enVSOD = fields[3]   # Vso ; Real well depth of spin-orbit term.
-            enWSOD = fields[4]   # Wso ; Imaginary well depth of spin-orbit term.
-            enRRD = fields[5]    # r0  ; Real well radius parameter.
-            enARD = fields[6]    # ar  ;Real well diffuseness parameter.
-            enRCD = fields[7]    # rc  ; Coulomb charge radius parameter.
+            headinfo["enVD"] = fields[1]     #! V   ; Real well depth of the optical potential.
+            headinfo["enWD"] = fields[2]     #! W   ; Imaginary well depth.
+            headinfo["enVSOD"] = fields[3]   # Vso ; Real well depth of spin-orbit term.
+            headinfo["enWSOD"] = fields[4]   # Wso ; Imaginary well depth of spin-orbit term.
+            headinfo["enRRD"] = fields[5]    # r0  ; Real well radius parameter.
+            headinfo["enARD"] = fields[6]    # ar  ;Real well diffuseness parameter.
+            headinfo["enRCD"] = fields[7]    # rc  ; Coulomb charge radius parameter.
         elif fields[0] == "6.1000":
-            enRSORD = fields[1]  # rsr ; Real well radius parameter of spin-orbit term.
-            enASORD = fields[2]  # asr ; Real well diffuseness parameter of spin-orbit term.
-            enRSOID = fields[3]  # rsi ; Imaginary well radius parameter of spin-orbit term.
-            enASOID = fields[4]  # asi ; Imaginary well diffuseness parameter of spin-orbit term.
-            
+            headinfo["enRSORD"] = fields[1]  # rsr ; Real well radius parameter of spin-orbit term.
+            headinfo["enASORD"] = fields[2]  # asr ; Real well diffuseness parameter of spin-orbit term.
+            headinfo["enRSOID"] = fields[3]  # rsi ; Imaginary well radius parameter of spin-orbit term.
+            headinfo["enASOID"] = fields[4]  # asi ; Imaginary well diffuseness parameter of spin-orbit term.
         elif fields[0] == "7.1000":
-            enCSDGD = fields[1]  # Csd ; Mixing factor of volume and surface imaginary well.
-            enRID = fields[2]    #! ri  ; Imaginary well radius parameter.
-            enAID = fields[3]    # ai  ; Imaginary well diffuseness parameter.
-            enRGD = fields[4]    # rg  ; Gaussian type imaginary well radius parameter.
-            enAGD = fields[5]    # ag  ;Gaussian type imaginary well range parameter.
-
-        # look for exit channels
+            headinfo["enCSDGD"] = fields[1]  # Csd ; Mixing factor of volume and surface imaginary well.
+            headinfo["enRID"] = fields[2]    #! ri  ; Imaginary well radius parameter.
+            headinfo["enAID"] = fields[3]    # ai  ; Imaginary well diffuseness parameter.
+            headinfo["enRGD"] = fields[4]    # rg  ; Gaussian type imaginary well radius parameter.
+            headinfo["enAGD"] = fields[5]    # ag  ;Gaussian type imaginary well range parameter.
+    # elif i == 9:
+    #     # read entrance channel proj and targ mass/charge
+    #     headinfo["enPMAS"] = fields[1]
+    #     headinfo["enTMAS"] = fields[2]
+    #     headinfo["enPZ"] = fields[3]
+    #     headinfo["enTZ"] = fields[4]
+    #     headinfo["enPSPN"] = fields[5]
+    #     headinfo["enTSPN"] = fields[6]
+    #     headinfo["enQVLUE"] = fields[7]
+    elif (10 <= i <= 12):
+        # look for exit channel potentials
+        fields = split_header[i].split()
         if fields[0] == "5.2000":
-            exVD = fields[1]     # V   ; Real well depth of the optical potential.
-            exWD = fields[2]     # W   ; Imaginary well depth.
-            exVSOD = fields[3]   # Vso ; Real well depth of spin-orbit term.
-            exWSOD = fields[4]   # Wso ; Imaginary well depth of spin-orbit term.
-            exRRD = fields[5]    # r0  ; Real well radius parameter.
-            exARD = fields[6]    # ar  ;Real well diffuseness parameter.
-            exRCD = fields[7]    # rc  ; Coulomb charge radius parameter.
+            headinfo["exVD"] = fields[1]     #! V   ; Real well depth of the optical potential.
+            headinfo["exWD"] = fields[2]     #! W   ; Imaginary well depth.
+            headinfo["exVSOD"] = fields[3]   # Vso ; Real well depth of spin-orbit term.
+            headinfo["exWSOD"] = fields[4]   # Wso ; Imaginary well depth of spin-orbit term.
+            headinfo["exRRD"] = fields[5]    # r0  ; Real well radius parameter.
+            headinfo["exARD"] = fields[6]    # ar  ;Real well diffuseness parameter.
+            headinfo["exRCD"] = fields[7]    # rc  ; Coulomb charge radius parameter.
         elif fields[0] == "6.2000":
-            exRSORD = fields[1]  # rsr ; Real well radius parameter of spin-orbit term.
-            exASORD = fields[2]  # asr ; Real well diffuseness parameter of spin-orbit term.
-            exRSOID = fields[3]  # rsi ; Imaginary well radius parameter of spin-orbit term.
-            exASOID = fields[4]  # asi ; Imaginary well diffuseness parameter of spin-orbit term.
-            
+            headinfo["exRSORD"] = fields[1]  # rsr ; Real well radius parameter of spin-orbit term.
+            headinfo["exASORD"] = fields[2]  # asr ; Real well diffuseness parameter of spin-orbit term.
+            headinfo["exRSOID"] = fields[3]  # rsi ; Imaginary well radius parameter of spin-orbit term.
+            headinfo["exASOID"] = fields[4]  # asi ; Imaginary well diffuseness parameter of spin-orbit term.
         elif fields[0] == "7.2000":
-            exCSDGD = fields[1]  # Csd ; Mixing factor of volume and surface imaginary well.
-            exRID = fields[2]    #! ri  ; Imaginary well radius parameter.
-            exAID = fields[3]    # ai  ; Imaginary well diffuseness parameter.
-            exRGD = fields[4]    # rg  ; Gaussian type imaginary well radius parameter.
-            exAGD = fields[5]    # ag  ;Gaussian type imaginary well range parameter.
+            headinfo["exCSDGD"] = fields[1]  # Csd ; Mixing factor of volume and surface imaginary well.
+            headinfo["exRID"] = fields[2]    #! ri  ; Imaginary well radius parameter.
+            headinfo["exAID"] = fields[3]    # ai  ; Imaginary well diffuseness parameter.
+            headinfo["exRGD"] = fields[4]    # rg  ; Gaussian type imaginary well radius parameter.
+            headinfo["exAGD"] = fields[5]    # ag  ;Gaussian type imaginary well range parameter.
+    else:
+        headinfo[f"line_{i+1}"] = split_header[i]
 
 # Check entrance potentials
-if enVD == "1.0000" and enRRD == "99.0000":
-    read_enrepot = True
-    read_pots += 1
-else:
-    read_enrepot = False
-if enWD == "1.0000" and enRID == "99.0000":
-    read_enimpot = True
-    read_pots += 1
-else:
-    read_enimpot = False
-if enVSOD == "1.0000" and enRSORD == "99.0000":
-    read_ensopot = True
-    read_pots += 1
-else:
-    read_ensopot = False
+print("Hi")
+bool_read_pot = {
+    "check_enrepot": headinfo["enVD"] == "1.0000" and headinfo["enRRD"] == "99.0000",
+    "check_enimpot": headinfo["enWD"] == "1.0000" and headinfo["enRID"] == "99.0000",
+    "check_ensopot": headinfo["enVSOD"] == "1.0000" and headinfo["enRSORD"] == "99.0000",
+    "check_exrepot": headinfo["exVD"] == "1.0000" and headinfo["exRRD"] == "99.0000",
+    "check_eximpot": headinfo["exWD"] == "1.0000" and headinfo["exRID"] == "99.0000",
+    "check_exsopot": headinfo["exVSOD"] == "1.0000" and headinfo["exRSORD"] == "99.0000",
+}
 
-# Check exit potentials
-if exVD == "1.0000" and exRRD == "99.0000":
-    read_exrepot = True
-    read_pots += 1
-else:
-    read_exrepot = False
-if exWD == "1.0000" and exRID == "99.0000":
-    read_eximpot = True
-    read_pots += 1
-else:
-    read_eximpot = False
-if exVSOD == "1.0000" and exRSORD == "99.0000":
-    read_exsopot = True
-    read_pots += 1
-else:
-    read_exsopot = False
+numread_pots = sum(bool_read_pot.values())
+
 
 # Counting the number of (5e14.7) in the tran file to double check it lines up with the previous number of read in files
 count_form = tran_string.count("(5e14.7)")
 
-print(f"Total number of potentials read in in input tran file: {read_pots}")
+print(f"Total number of potentials to be read in according to header: {numread_pots}")
 print(f"Actual number of potentials read in: {count_form}")
+if numread_pots != count_form:
+    raise ValueError(f"Number of potentials to be read in according to header ({numread_pots}) does not equal the number of detected potentials in the tran file ({count_form}).")
 
-# def parse_file(filename):
-#     with open(filename, "r") as f:
-#         lines = f.readlines()
+# Assign pot_x to whichever enrepot ... exsopot is read in
+pot_iter = 1
+for key, check in bool_read_pot.items():
+    if check:
+        print(f"First valid pot: {key[6:]} is assigned to pot_{pot_iter}")
+        pots_dict[f"{key[6:]}"] = pots_dict[f"pot_{pot_iter}"]
+        pot_iter += 1
+    else:
+        pots_dict[f"{key[6:]}"] = ""
+# pots_dict now has 12 keys, 6 that are pot_x and 6 that match the string to which the read in
+# print(pots_dict)
 
-#     header_lines = []
-#     footer_lines = []
-#     blocks = []
+#* Read in tfold pot
+if not (which_channel_tfold == "en" or which_channel_tfold == "ex"):
+    raise ValueError("Don't know what channel to put tfold pot into. which_channel_tfold not clear.")
 
-#     n = len(lines)
-#     i = 0
+with open(tfold_re_file, "r") as file:
+    tfold_re = file.read()
 
-#     # -----------------------
-#     # 1. FIND FOOTER START
-#     # -----------------------
-#     footer_start = None
-#     for idx, line in enumerate(lines):
-#         if line.startswith("   10.0000"):
-#             footer_start = idx
-#             break
+with open(tfold_im_file, "r") as file:
+    tfold_im = file.read()
 
-#     if footer_start is None:
-#         raise ValueError("Footer not found (missing '10.0000')")
+tfold_so = TFOLD_SO_TEMPLATE.format(channel=which_channel_tfold)  # This is just a big array of zeroes at the moment
 
-#     # -----------------------
-#     # 2. SPLIT HEADER / BODY / FOOTER
-#     # -----------------------
-#     header_lines = lines[:footer_start]
-#     body_lines = lines[len(header_lines):footer_start]
-#     footer_lines = lines[footer_start:]
+# replace card 5.? pot params
+headinfo[f"{which_channel_tfold}VD"] = "1.0000"
+headinfo[f"{which_channel_tfold}WD"] = "1.0000"
+headinfo[f"{which_channel_tfold}VSOD"] = "1.0000"
+headinfo[f"{which_channel_tfold}WSOD"] = "0.0000"
+headinfo[f"{which_channel_tfold}RRD"] = "99.0000"
+headinfo[f"{which_channel_tfold}ARD"] = "1.0000"
+# replace card 6.? pot params
+headinfo[f"{which_channel_tfold}RSORD"] = "99.0000"
+headinfo[f"{which_channel_tfold}ASORD"] = "1.0000"
+headinfo[f"{which_channel_tfold}RSOID"] = "1.0000"
+headinfo[f"{which_channel_tfold}ASOID"] = "1.0000"
+# replace card 7.? pot params
+headinfo[f"{which_channel_tfold}CSDGD"] = "0.0000"
+headinfo[f"{which_channel_tfold}RID"] = "99.0000"
+headinfo[f"{which_channel_tfold}AID"] = "1.0000"
+headinfo[f"{which_channel_tfold}RGD"] = "0.0000"
+headinfo[f"{which_channel_tfold}AGD"] = "0.0000"
 
-#     # -----------------------
-#     # 3. PARSE BLOCKS (if any)
-#     # -----------------------
-#     i = 0
-#     n_body = len(body_lines)
+pots_dict[f"{which_channel_tfold}repot"] = tfold_re
+pots_dict[f"{which_channel_tfold}impot"] = tfold_im
+pots_dict[f"{which_channel_tfold}sopot"] = tfold_so
 
-#     while i < n_body:
-#         line = body_lines[i]
+for key, value in headinfo.items():
+    if key[0:2] == "en" or key[0:2] == "ex":
+        headinfo[key] = f"{value:>10}"
 
-#         if "(5e14.7)" in line:
-#             block_label = line.strip()
-#             i += 1
+mod_tran = TRAN_TEMPLATE.format(
+    head_line_1=headinfo["line_1"],
+    head_line_2=headinfo["line_2"],
+    head_line_3=headinfo["line_3"],
+    head_line_4=headinfo["line_4"],
+    head_line_5=headinfo["line_5"],
+    enVD=headinfo["enVD"],
+    enWD=headinfo["enWD"],
+    enVSOD=headinfo["enVSOD"],
+    enWSOD=headinfo["enWSOD"],
+    enRRD=headinfo["enRRD"],
+    enARD=headinfo["enARD"],
+    enRCD=headinfo["enRCD"],
+    enRSORD=headinfo["enRSORD"],
+    enASORD=headinfo["enASORD"],
+    enRSOID=headinfo["enRSOID"],
+    enASOID=headinfo["enASOID"],
+    enCSDGD=headinfo["enCSDGD"],
+    enRID=headinfo["enRID"],
+    enAID=headinfo["enAID"],
+    enRGD=headinfo["enRGD"],
+    enAGD=headinfo["enAGD"],
+    head_line_9=headinfo["line_9"],
+    head_line_10=headinfo["line_10"],
+    exVD=headinfo["exVD"],
+    exWD=headinfo["exWD"],
+    exVSOD=headinfo["exVSOD"],
+    exWSOD=headinfo["exWSOD"],
+    exRRD=headinfo["exRRD"],
+    exARD=headinfo["exARD"],
+    exRCD=headinfo["exRCD"],
+    exRSORD=headinfo["exRSORD"],
+    exASORD=headinfo["exASORD"],
+    exRSOID=headinfo["exRSOID"],
+    exASOID=headinfo["exASOID"],
+    exCSDGD=headinfo["exCSDGD"],
+    exRID=headinfo["exRID"],
+    exAID=headinfo["exAID"],
+    exRGD=headinfo["exRGD"],
+    exAGD=headinfo["exAGD"],
+    head_line_14=headinfo["line_14"],
+    enrepot=pots_dict["enrepot"],
+    enimpot=pots_dict["enimpot"],
+    ensopot=pots_dict["ensopot"],
+    exrepot=pots_dict["exrepot"],
+    eximpot=pots_dict["eximpot"],
+    exsopot=pots_dict["exsopot"],
+    footer=footer,
+                                )
+print(mod_tran)
 
-#             block_data = []
-
-#             while i < n_body and "(5e14.7)" not in body_lines[i]:
-#                 block_data.append(body_lines[i])
-#                 i += 1
-
-#             blocks.append({
-#                 "label": block_label,
-#                 "data": "".join(block_data).strip()
-#             })
-#         else:
-#             i += 1
-
-#     # -----------------------
-#     # 4. SAFE OUTPUT (0–6 blocks)
-#     # -----------------------
-#     result = {
-#         "header_string": "".join(header_lines).strip(),
-#         "potential_1": blocks[0] if len(blocks) > 0 else None,
-#         "potential_2": blocks[1] if len(blocks) > 1 else None,
-#         "potential_3": blocks[2] if len(blocks) > 2 else None,
-#         "potential_4": blocks[3] if len(blocks) > 3 else None,
-#         "potential_5": blocks[4] if len(blocks) > 4 else None,
-#         "potential_6": blocks[5] if len(blocks) > 5 else None,
-#         "footer_string": "".join(footer_lines).strip()
-#     }
-
-#     return result
-
-# result = parse_file(filename)
-
-# print(result["header_string"])
-# print(result["potential_1"])
-# print(result["potential_2"])
-# print(result["potential_3"])
-# print(result["potential_4"])
-# print(result["potential_5"])
-# print(result["potential_6"])
-# print(result["footer_string"])
+# make datap
+with open(f"./tfold_{tran_file}", "w") as f:
+    f.write(mod_tran)
